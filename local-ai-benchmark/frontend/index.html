@@ -5,46 +5,186 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Local AI Benchmark</title>
     <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>Local AI Benchmark</h1>
-            <p>Compare local LLM performance powered by Ollama</p>
-        </header>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">SLM</div>
+                <h2>Dashboard</h2>
+            </div>
 
-        <main>
-            <section class="controls">
-                <div class="input-group">
-                    <label for="prompt-input">Enter Prompt</label>
-                    <textarea id="prompt-input" placeholder="e.g. Explain black holes in simple terms"></textarea>
+            <div class="sidebar-section">
+                <h3>SYSTEM INFORMATION</h3>
+                <div class="info-row">
+                    <span class="label">CPU:</span>
+                    <span class="value" id="sys-cpu">Loading...</span>
+                </div>
+                <div class="info-row">
+                    <span class="label">RAM:</span>
+                    <span class="value" id="sys-ram">Loading...</span>
+                </div>
+                <div class="info-row">
+                    <span class="label">OS:</span>
+                    <span class="value" id="sys-os">Loading...</span>
+                </div>
+                <div class="info-row">
+                    <span class="label">Runtime:</span>
+                    <span class="value">Ollama</span>
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <h3>MODELS</h3>
+                <div class="models-list">
+                    <div class="model-item">mistral:latest</div>
+                    <div class="model-item">tinyllama:latest</div>
+                    <div class="model-item">phi3:latest</div>
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <h3>HISTORY</h3>
+                <div class="history-empty">
+                    No runs yet
+                </div>
+            </div>
+
+            <div class="sidebar-footer">
+                <span class="status-indicator"></span> Status: <span class="status-text">Online</span>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="top-bar">
+                <button class="review-btn" id="review-btn">Review</button>
+                <button class="voice-chat-launch-btn" id="voice-chat-btn" title="Start Voice Chat">
+                    <i class="fa-solid fa-waveform-lines"></i> Voice Chat
+                </button>
+            </div>
+
+            <header class="main-header">
+                <h1>Local SLM Benchmark</h1>
+                <p>Compare performance of Small Language Models running locally via Ollama</p>
+            </header>
+
+            <div class="welcome-box">
+                <p>👋 Welcome! Select a model, pick a quick test, then hit <strong>BENCHMARK</strong> to measure performance or the <strong>send</strong> button to chat.</p>
+            </div>
+
+            <div class="results-area" id="results-display">
+                <div id="results-container" class="results-container">
+                    <!-- Results will be injected here -->
+                </div>
+            </div>
+
+            <div class="bottom-controls">
+                <div class="quick-tests">
+                    <span class="quick-tests-label">QUICK TESTS:</span>
+                    <button class="quick-test-btn" data-prompt="Explain artificial intelligence in exactly 50 words. Be clear and concise." data-action="benchmark">
+                        <i class="fa-solid fa-bolt"></i> Speed
+                    </button>
+                    <button class="quick-test-btn" data-prompt="A farmer has 17 sheep. All but 9 die. How many sheep are left? Show your reasoning step by step." data-action="ask">
+                        <i class="fa-solid fa-brain"></i> Reasoning
+                    </button>
+                    <button class="quick-test-btn" data-prompt="Write a Python function to check if a number is prime. Include a docstring and example usage." data-action="ask">
+                        <i class="fa-solid fa-laptop-code"></i> Coding
+                    </button>
+                    <button class="quick-test-btn" data-prompt="Remember this number: 47291. Now explain what a database is in 2 sentences. After that, repeat the number you were told to remember." data-action="ask">
+                        <i class="fa-regular fa-floppy-disk"></i> Memory
+                    </button>
+                    <button class="quick-test-btn" data-prompt="Write a detailed 500-word essay on the future of artificial intelligence, covering ethics, automation, and societal impact." data-action="benchmark">
+                        <i class="fa-solid fa-rocket"></i> Stress
+                    </button>
+                    <button class="quick-test-btn" data-prompt="What is the meaning of life? Answer in exactly one sentence." data-action="compare">
+                        <i class="fa-solid fa-bullseye"></i> Comparison
+                    </button>
                 </div>
 
-                <div class="actions">
-                    <div class="model-select-group">
-                        <label for="model-select">Select Model</label>
-                        <select id="model-select">
+                <div class="input-bar-container">
+                    <div class="input-bar">
+                        <select id="model-select" class="model-dropdown">
                             <option value="phi3">Phi-3</option>
                             <option value="tinyllama">TinyLlama</option>
                             <option value="mistral">Mistral</option>
                         </select>
-                    </div>
-                    
-                    <div class="button-group">
-                        <button id="ask-btn">Ask Model</button>
-                        <button id="benchmark-btn" class="accent">Run Benchmark</button>
+                        <div class="divider"></div>
+                        <input type="text" id="prompt-input" placeholder="Ask anything or run Quick Test...">
+                        <div class="input-actions">
+                            <button class="icon-btn" id="mic-btn" title="Click to speak"><i class="fa-solid fa-microphone"></i></button>
+                            <button class="icon-btn send-btn" id="ask-btn"><i class="fa-solid fa-paper-plane"></i></button>
+                        </div>
+                        <button id="benchmark-btn" class="action-btn benchmark-btn">BENCHMARK</button>
+                        <button id="compare-btn" class="action-btn secondary-btn">COMPARE ALL</button>
+                        <button id="suite-btn" class="action-btn secondary-btn">RUN SUITE</button>
+                        <button id="dataset-btn" class="action-btn outline-btn">DATASET</button>
                     </div>
                 </div>
-            </section>
 
-            <section id="results-display" class="results-display">
-                <h2>Benchmark Results</h2>
-                <div id="results-container" class="results-container">
-                    <p class="placeholder">Results will appear here...</p>
+                <div class="footer-note">
+                    <span class="red-dot"></span> LOCAL MODE Models run <strong>100% offline</strong> via Ollama — no internet access. Responses about "latest", "current", or "today" may be outdated. - SLM Benchmark measures latency & tokens/sec using Ollama's native eval counters.
                 </div>
-            </section>
+            </div>
         </main>
+    </div>
+
+    <!-- ── Voice Chat Overlay ─────────────────────────────────────────── -->
+    <div id="voice-chat-overlay" class="vc-overlay" aria-hidden="true">
+        <div class="vc-panel">
+
+            <!-- Header -->
+            <div class="vc-header">
+                <div class="vc-title">
+                    <i class="fa-solid fa-microphone-lines"></i>
+                    <span>Voice Chat</span>
+                </div>
+                <div class="vc-model-select">
+                    <i class="fa-solid fa-robot"></i>
+                    <select id="vc-model-select"></select>
+                </div>
+                <button class="vc-close-btn" id="vc-close-btn" title="Close">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Orb visualiser -->
+            <div class="vc-orb-area">
+                <div class="vc-orb-ring vc-ring-3"></div>
+                <div class="vc-orb-ring vc-ring-2"></div>
+                <div class="vc-orb-ring vc-ring-1"></div>
+                <div class="vc-orb" id="vc-orb">
+                    <i class="fa-solid fa-microphone" id="vc-orb-icon"></i>
+                </div>
+            </div>
+
+            <!-- Status label -->
+            <div class="vc-status" id="vc-status">Click the orb to start</div>
+
+            <!-- Transcript area -->
+            <div class="vc-transcript" id="vc-transcript">
+                <div class="vc-transcript-empty">Your conversation will appear here&hellip;</div>
+            </div>
+
+            <!-- Bottom controls -->
+            <div class="vc-controls">
+                <button class="vc-ctrl-btn" id="vc-mute-btn" title="Mute TTS">
+                    <i class="fa-solid fa-volume-high"></i>
+                </button>
+                <button class="vc-main-btn" id="vc-main-btn">
+                    <i class="fa-solid fa-microphone"></i>
+                    <span>Tap to Speak</span>
+                </button>
+                <button class="vc-ctrl-btn" id="vc-stop-btn" title="Stop speaking">
+                    <i class="fa-solid fa-stop"></i>
+                </button>
+            </div>
+
+        </div>
     </div>
 
     <script src="script.js"></script>

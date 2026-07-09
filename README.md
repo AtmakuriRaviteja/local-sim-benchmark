@@ -58,7 +58,7 @@ The API server will start at `http://localhost:8000`. You can explore the API do
 
 ### 5. Open the Frontend
 
-Open `local-ai-benchmark/index.html` in any modern web browser, or simply visit the [live frontend](https://atmakuriraviteja.github.io/local-sim-benchmark/) — it will automatically connect to your local backend when it's running.
+Open `docs/index.html` in any modern web browser, or simply visit the [live frontend](https://atmakuriraviteja.github.io/local-sim-benchmark/) — it will automatically connect to your local backend when it's running.
 
 ---
 

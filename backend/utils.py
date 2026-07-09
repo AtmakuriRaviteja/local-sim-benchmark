@@ -1,11 +1,15 @@
-import psutil
-import subprocess
 import json
 import logging
 import os
+import subprocess
 from datetime import datetime
 
-CHAT_HISTORY_FILE = os.path.join(os.path.dirname(__file__), "..", "data", "chat_history.json")
+import psutil
+
+CHAT_HISTORY_FILE = os.path.join(
+    os.path.dirname(__file__), "..", "data", "chat_history.json"
+)
+
 
 def get_hardware_metrics():
     """
@@ -14,22 +18,45 @@ def get_hardware_metrics():
     try:
         cpu_usage = psutil.cpu_percent(interval=0.1)
         ram_usage = psutil.virtual_memory().percent
-        return {
-            "cpu_usage": cpu_usage,
-            "ram_usage": ram_usage
-        }
+        return {"cpu_usage": cpu_usage, "ram_usage": ram_usage}
     except Exception as e:
         logging.error(f"Error getting hardware metrics: {e}")
         return {"cpu_usage": 0, "ram_usage": 0}
+
+
+def get_system_info():
+    """
+    Returns static system information like CPU cores and RAM size.
+    """
+    try:
+        cpu_count = psutil.cpu_count(logical=True)
+        ram_gb = round(psutil.virtual_memory().total / (1024**3))
+        return {
+            "cpu": f"{cpu_count}-Core Processor",
+            "ram": f"{ram_gb}GB RAM",
+            "gpu": "Unknown GPU",
+            "runtime": "Ollama",
+        }
+    except Exception as e:
+        logging.error(f"Error getting system info: {e}")
+        return {
+            "cpu": "Unknown Processor",
+            "ram": "Unknown RAM",
+            "gpu": "Unknown GPU",
+            "runtime": "Ollama",
+        }
+
 
 def get_models():
     """
     Executes 'ollama list' and parses the output to return a list of model names.
     """
     try:
-        result = subprocess.run(['ollama', 'list'], capture_output=True, text=True, check=True)
-        lines = result.stdout.strip().split('\n')
-        
+        result = subprocess.run(
+            ["ollama", "list"], capture_output=True, text=True, check=True
+        )
+        lines = result.stdout.strip().split("\n")
+
         # Skip header and extract model names
         models = []
         for line in lines[1:]:
@@ -41,6 +68,7 @@ def get_models():
     except Exception as e:
         logging.error(f"Error listing ollama models: {e}")
         return []
+
 
 def get_chat_history():
     """
@@ -55,21 +83,22 @@ def get_chat_history():
         logging.error(f"Error reading chat history: {e}")
         return []
 
+
 def save_chat_message(prompt, model, response):
     """
     Saves a chat message and response to the history file.
     """
     history = get_chat_history()
-    
+
     entry = {
         "timestamp": datetime.now().isoformat(),
         "prompt": prompt,
         "model": model,
-        "response": response
+        "response": response,
     }
-    
+
     history.append(entry)
-    
+
     # Keep last 100 messages
     try:
         os.makedirs(os.path.dirname(CHAT_HISTORY_FILE), exist_ok=True)
