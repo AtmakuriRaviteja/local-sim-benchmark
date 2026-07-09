@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Local SLM Benchmark</title>
+    <meta name="description" content="Compare performance of local Small Language Models running via Ollama — latency, tokens/sec, and head-to-head comparison.">
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo-box">
+                <div class="logo">SLM</div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <div class="nav-item active">Dashboard</div>
+            </nav>
+
+            <div class="system-information">
+                <h4>SYSTEM INFORMATION</h4>
+                <div class="info-row">
+                    <span>CPU:</span>
+                    <span class="info-val">8-Core Processor</span>
+                </div>
+                <div class="info-row">
+                    <span>RAM:</span>
+                    <span class="info-val">16GB DDR4</span>
+                </div>
+                <div class="info-row">
+                    <span>GPU:</span>
+                    <span class="info-val">Integrated Graphics</span>
+                </div>
+                <div class="info-row">
+                    <span>Runtime:</span>
+                    <span class="info-val">Ollama</span>
+                </div>
+            </div>
+
+            <div class="models-list-container">
+                <h4>MODELS</h4>
+                <div id="sidebar-models" class="model-tags">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+
+            <!-- Run History -->
+            <div class="history-container">
+                <h4>HISTORY</h4>
+                <div id="history-list" class="history-list">
+                    <div class="history-empty">No runs yet</div>
+                </div>
+            </div>
+
+            <div class="status-box">
+                Status: <span class="status-online">Online</span>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="main-header">
+                <h1 class="gradient-text">Local SLM Benchmark</h1>
+                <p class="subtitle">Compare performance of Small Language Models running locally via Ollama</p>
+            </header>
+
+            <div class="content-scroll" id="main-scroll-area">
+                <!-- Result Area — shown after benchmark/compare runs -->
+                <div id="result-area" class="result-area hidden"></div>
+
+                <!-- Analytics Hub (shown after full evaluate suite) -->
+                <div id="analytics-hub" class="analytics-grid hidden">
+                    <!-- Chart Module -->
+                    <section class="workspace-panel glass-card">
+                        <div class="section-head">
+                            <h3>Performance Dynamics</h3>
+                            <div class="chart-toggles">
+                                <button class="metric-btn active" onclick="updateChartMetric('score')">Score</button>
+                                <button class="metric-btn" onclick="updateChartMetric('tps')">TPS</button>
+                                <button class="metric-btn" onclick="updateChartMetric('latency')">Latency</button>
+                            </div>
+                        </div>
+                        <div class="chart-viewport">
+                            <canvas id="performanceChart"></canvas>
+                        </div>
+                    </section>
+
+                    <!-- Leaderboard Module -->
+                    <section class="workspace-panel glass-card">
+                        <div class="section-head">
+                            <h3>Performance Leaderboard</h3>
+                        </div>
+                        <div class="leaderboard-container">
+                            <table class="data-matrix">
+                                <thead>
+                                    <tr>
+                                        <th>Model</th>
+                                        <th>Score</th>
+                                        <th>Avg TPS</th>
+                                        <th>Details</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="leaderboard-body">
+                                    <tr class="empty-row"><td colspan="4">No Data Available</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+
+                    <!-- Evaluation Tasks Inspector -->
+                    <section id="tasks-panel" class="workspace-panel glass-card full-width">
+                        <div class="section-head">
+                            <h3>Evaluation Tasks</h3>
+                            <p style="font-size: 0.75rem; color: var(--text-low);">Inspect specific prompts and model responses</p>
+                        </div>
+                        <div id="tasks-container" class="tasks-explorer">
+                            <div class="empty-state">RUN EVALUATION TO INSPECT TASKS</div>
+                        </div>
+                    </section>
+                </div>
+
+                <!-- Chat History Area -->
+                <div id="chat-history" class="chat-history">
+                    <div class="ai-bubble intro">
+                        👋 Welcome! Select a model, pick a quick test, then hit <strong>BENCHMARK</strong> to measure performance or the <strong>send</strong> button to chat.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Benchmark Prompt Presets -->
+            <div class="prompt-presets-bar">
+                <span class="presets-label">Quick Tests:</span>
+                <button class="preset-btn" id="preset-speed" onclick="fillPreset('speed')" title="Measure latency + tokens/sec">⚡ Speed</button>
+                <button class="preset-btn" id="preset-reasoning" onclick="fillPreset('reasoning')" title="Test logical thinking">🧠 Reasoning</button>
+                <button class="preset-btn" id="preset-coding" onclick="fillPreset('coding')" title="Test code quality">💻 Coding</button>
+                <button class="preset-btn" id="preset-memory" onclick="fillPreset('memory')" title="Test context handling">📝 Memory</button>
+                <button class="preset-btn" id="preset-stress" onclick="fillPreset('stress')" title="Output speed stress test">🚀 Stress</button>
+                <button class="preset-btn" id="preset-comparison" onclick="fillPreset('comparison')" title="Best cross-model comparison">🎯 Comparison</button>
+            </div>
+
+            <!-- Floating Chat Input -->
+            <div class="chat-input-wrapper">
+                <div class="chat-input-container">
+                    <div class="input-actions-left">
+                        <select id="model-select" class="chat-model-select">
+                            <option>Loading...</option>
+                        </select>
+                    </div>
+                    <textarea id="prompt-input" placeholder="Ask anything or pick a Quick Test above..." rows="1"></textarea>
+                    <div class="input-actions-right">
+                        <button class="icon-btn" title="Voice Input">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
+                        </button>
+                        <button id="ask-btn" class="send-btn" title="Send Message">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                        </button>
+                        <button id="stop-btn" class="stop-btn hidden" title="Stop Generation">
+                            <div class="stop-icon"></div>
+                        </button>
+                        <button id="benchmark-btn" class="benchmark-pill-btn" title="Run Benchmark on selected model">
+                            BENCHMARK
+                        </button>
+                        <button id="compare-btn" class="compare-pill-btn" title="Compare all installed models">
+                            COMPARE ALL
+                        </button>
+                        <button id="suite-btn" class="suite-pill-btn" title="Run full 4-prompt benchmark suite across all models">
+                            RUN SUITE
+                        </button>
+                        <button id="dataset-btn" class="dataset-pill-btn" title="Run standardized dataset benchmark (8 typed prompts)">
+                            DATASET
+                        </button>
+                    </div>
+                </div>
+                <div class="chat-footer-disclaimer">
+                    <span class="offline-badge">🔴 LOCAL MODE</span>
+                    Models run <strong>100% offline</strong> via Ollama — no internet access. Responses about "latest", "current", or "today" may be outdated.
+                    <span class="disclaimer-sep">·</span>
+                    SLM Benchmark measures latency &amp; tokens/sec using Ollama's native eval counters.
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

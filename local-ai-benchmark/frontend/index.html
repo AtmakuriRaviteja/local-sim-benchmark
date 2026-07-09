@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Local AI Benchmark</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Local AI Benchmark</h1>
+            <p>Compare local LLM performance powered by Ollama</p>
+        </header>
+
+        <main>
+            <section class="controls">
+                <div class="input-group">
+                    <label for="prompt-input">Enter Prompt</label>
+                    <textarea id="prompt-input" placeholder="e.g. Explain black holes in simple terms"></textarea>
+                </div>
+
+                <div class="actions">
+                    <div class="model-select-group">
+                        <label for="model-select">Select Model</label>
+                        <select id="model-select">
+                            <option value="phi3">Phi-3</option>
+                            <option value="tinyllama">TinyLlama</option>
+                            <option value="mistral">Mistral</option>
+                        </select>
+                    </div>
+                    
+                    <div class="button-group">
+                        <button id="ask-btn">Ask Model</button>
+                        <button id="benchmark-btn" class="accent">Run Benchmark</button>
+                    </div>
+                </div>
+            </section>
+
+            <section id="results-display" class="results-display">
+                <h2>Benchmark Results</h2>
+                <div id="results-container" class="results-container">
+                    <p class="placeholder">Results will appear here...</p>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

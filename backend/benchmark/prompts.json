@@ -1,0 +1,58 @@
+[
+  {
+    "id": "reasoning_sheep",
+    "type": "reasoning",
+    "prompt": "A farmer has 17 sheep. All but 9 die. How many sheep are left? Show your step-by-step reasoning.",
+    "expected": "9",
+    "weight": 1.0
+  },
+  {
+    "id": "math_multiply",
+    "type": "math",
+    "prompt": "What is 25 multiplied by 4? Give only the numeric answer.",
+    "expected": "100",
+    "weight": 1.0
+  },
+  {
+    "id": "math_percentage",
+    "type": "math",
+    "prompt": "If a product costs $80 and is discounted by 25%, what is the final price? Show your working.",
+    "expected": "60",
+    "weight": 1.0
+  },
+  {
+    "id": "memory_number",
+    "type": "memory",
+    "prompt": "Remember this number: 47291. Now explain what artificial intelligence is in exactly 2 sentences. After that, repeat the number you were told to remember.",
+    "expected": "47291",
+    "weight": 1.2
+  },
+  {
+    "id": "coding_reverse",
+    "type": "coding",
+    "prompt": "Write a Python function to reverse a string. Include a docstring.",
+    "expected": "def",
+    "weight": 1.0
+  },
+  {
+    "id": "coding_prime",
+    "type": "coding",
+    "prompt": "Write a Python function called is_prime that returns True if a number is prime and False otherwise.",
+    "expected": "def",
+    "weight": 1.0
+  },
+  {
+    "id": "reasoning_logic",
+    "type": "reasoning",
+    "prompt": "All roses are flowers. Some flowers fade quickly. Can we conclude that some roses fade quickly? Answer Yes or No and explain briefly.",
+    "expected": "no",
+    "weight": 1.2
+  },
+  {
+    "id": "factual_capital",
+    "type": "factual",
+    "prompt": "What is the capital city of Japan? Answer in one word.",
+    "expected": "tokyo",
+    "weight": 0.8
+  }
+]

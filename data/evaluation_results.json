@@ -1,0 +1,411 @@
+[
+    {
+        "timestamp": "2026-03-09T18:10:56.783073",
+        "results": [
+            {
+                "model": "mistral:latest",
+                "tasks": [
+                    {
+                        "task_id": "custom",
+                        "latency": 11.83,
+                        "tps": 16.45,
+                        "response": " Artificial Intelligence (AI) refers to the simulation of human intelligence in machines that are programmed to think, learn, and act like humans. It involves creating computer systems that can perform tasks that typically require human intelligence, such as recognizing speech, understanding images, solving problems, and making decisions. AI can be categorized into two main types: narrow AI, designed to perform specific tasks like voice recognition or internet searches, and general AI, which is a more complex form of AI that can perform any intellectual task that a human being can. AI has the potential to revolutionize many industries, making processes more efficient, and even outperforming humans in certain tasks, but also raises important ethical and societal questions about its impact on employment and privacy."
+                    }
+                ],
+                "avg_latency": 11.83,
+                "avg_tps": 16.45,
+                "avg_cpu": 13.3,
+                "avg_ram": 73.0,
+                "total_tokens": 153,
+                "score": 1.39,
+                "timestamp": "2026-03-09T18:10:40.050544"
+            },
+            {
+                "model": "tinyllama:latest",
+                "tasks": [
+                    {
+                        "task_id": "custom",
+                        "latency": 5.42,
+                        "tps": 308.89,
+                        "response": "Artificial intelligence (AI) is a subfield of computer science that aims to create intelligent systems that can perform tasks, learn from data, and adapt to new situations. In one clear paragraph, you can explain how AI works and its relevance to the modern world. It can be simple, concise, and easy to understand for beginners like you. Here's a clear and concise explanation:\n\nArtificial intelligence refers to the development of intelligent systems that can perform tasks, learn from data, and adapt to new situations. It's a powerful tool that has already revolutionized many industries, from healthcare to finance to transportation. By combining advanced algorithms and machine learning technologies, AI can do things that were once only imaginable through humans. From self-driving cars to chatbots, AI is everywhere you look, and it's only going to get better."
+                    }
+                ],
+                "avg_latency": 5.42,
+                "avg_tps": 308.89,
+                "avg_cpu": 11.3,
+                "avg_ram": 66.3,
+                "total_tokens": 195,
+                "score": 56.99,
+                "timestamp": "2026-03-09T18:10:45.687765"
+            },
+            {
+                "model": "phi3:latest",
+                "tasks": [
+                    {
+                        "task_id": "custom",
+                        "latency": 10.87,
+                        "tps": 41.41,
+                        "response": "Artificial intelligence (AI) refers to the ability of machines and computer programs to mimic or replicate human intelligence, such as learning, problem-solving, and decision-making abilities. In simpler terms, AI makes it possible for machines to think and learn like humans, but in a much faster and more efficient way. This technology uses algorithms and data to perform tasks that typically require human intelligence, such as recognizing speech, translating languages, or even playing games. AI systems can be categorized as either narrow or general. Narrow AI is designed to perform a specific task, like recognizing faces in a photo, while general AI has the capability to understand and reason like a human, which is still a work in progress. As AI continues to evolve, it has the potential to drastically transform various industries, from healthcare to transportation, improving the way we live and work."
+                    }
+                ],
+                "avg_latency": 10.87,
+                "avg_tps": 41.41,
+                "avg_cpu": 8.3,
+                "avg_ram": 62.4,
+                "total_tokens": 195,
+                "score": 3.81,
+                "timestamp": "2026-03-09T18:10:56.781060"
+            }
+        ]
+    },
+    {
+        "timestamp": "2026-03-09T18:16:13.003897",
+        "results": [
+            {
+                "model": "mistral:latest",
+                "tasks": [
+                    {
+                        "task_id": "explanation",
+                        "task_name": "Explanation",
+                        "prompt": "Explain artificial intelligence in one paragraph.",
+                        "latency": 15.34,
+                        "tps": 16.59,
+                        "tokens": 109,
+                        "cpu": 8.5,
+                        "ram": 66.0,
+                        "response": " Artificial Intelligence (AI) refers to the simulation of human intelligence processes by machines, particularly computer systems. These processes include learning, reasoning, problem-solving, perception, and language understanding. AI aims to create systems capable of performing tasks that would normally require human intelligence, such as recognizing speech, making decisions, and understanding complex data. The development of AI has expanded over the years, with significant advancements in areas like machine learning and deep learning, leading to its increasing integration into various sectors like healthcare, finance, and entertainment."
+                    },
+                    {
+                        "task_id": "coding",
+                        "task_name": "Coding",
+                        "prompt": "Write a Python function that calculates Fibonacci numbers.",
+                        "latency": 16.4,
+                        "tps": 17.86,
+                        "tokens": 247,
+                        "cpu": 6.2,
+                        "ram": 70.8,
+                        "response": " Here is a simple recursive Python function that calculates Fibonacci numbers:\n\n```python\ndef fibonacci(n):\n    if n <= 0:\n        return \"Input should be a positive integer.\"\n    elif n == 1:\n        return 0\n    elif n == 2:\n        return 1\n    else:\n        return fibonacci(n - 1) + fibonacci(n - 2)\n```\n\nHowever, this function has exponential time complexity because it performs the same calculation multiple times for different subproblems. A more efficient version can be achieved using dynamic programming:\n\n```python\ndef fibonacci(n):\n    if n <= 0:\n        return \"Input should be a positive integer.\"\n    fib = [0, 1]\n\n    for i in range(2, n + 1):\n        fib.append(fib[i - 1] + fib[i - 2])\n\n    return fib[n]\n```\n\nThis version has linear time complexity and avoids repeated computations."
+                    },
+                    {
+                        "task_id": "reasoning",
+                        "task_name": "Reasoning",
+                        "prompt": "Explain why the sky is blue in simple terms.",
+                        "latency": 12.64,
+                        "tps": 17.14,
+                        "tokens": 174,
+                        "cpu": 6.2,
+                        "ram": 70.4,
+                        "response": " The sky appears blue because of a process called Rayleigh scattering. When sunlight, which is white light containing all colors of the rainbow, reaches Earth's atmosphere, it collides with the molecules and tiny particles in the air like nitrogen and oxygen.\n\nThe smaller the particles, the more they scatter the light in all directions. Blue light has shorter wavelengths and is scattered more easily than other colors like red, orange, and yellow, which have longer wavelengths.\n\nAs sunlight scatters in many directions, more blue light is scattered towards us, making the sky appear blue. At sunrise and sunset, the sunlight has to pass through more of Earth's atmosphere, causing even more blue light to be scattered away, leaving us with the beautiful red, orange, and pink hues in the sky."
+                    },
+                    {
+                        "task_id": "summarization",
+                        "task_name": "Summarization",
+                        "prompt": "Summarize the theory of relativity in a few sentences.",
+                        "latency": 12.66,
+                        "tps": 17.62,
+                        "tokens": 176,
+                        "cpu": 5.8,
+                        "ram": 70.2,
+                        "response": " Albert Einstein's Theory of Relativity, proposed in 1915, consists of two parts: Special Relativity (1905) and General Relativity.\n\n1. Special Relativity explains that the laws of physics are the same for all observers in uniform motion relative to each other, and that the speed of light in a vacuum is a constant and universal value (approximately 299,792 kilometers per second), implying time and space are relative to the observer's motion.\n\n2. General Relativity, an extension of special relativity, describes gravity as a curvature of spacetime caused by mass and energy, rather than an attractive force between objects. This theory has been instrumental in understanding the structure and behavior of the universe, including the existence of black holes and the Big Bang."
+                    }
+                ],
+                "avg_latency": 14.26,
+                "avg_tps": 17.3,
+                "avg_cpu": 6.7,
+                "avg_ram": 69.4,
+                "total_tokens": 706,
+                "score": 1.21,
+                "timestamp": "2026-03-09T18:14:25.905953"
+            },
+            {
+                "model": "tinyllama:latest",
+                "tasks": [
+                    {
+                        "task_id": "explanation",
+                        "task_name": "Explanation",
+                        "prompt": "Explain artificial intelligence in one paragraph.",
+                        "latency": 5.15,
+                        "tps": 262.8,
+                        "tokens": 157,
+                        "cpu": 6.2,
+                        "ram": 63.8,
+                        "response": "Artificial intelligence (AI) is a type of computer programming that creates and operates autonomous systems or machines that can exhibit intelligence, learning, and problem-solving abilities. AI is designed to perform tasks that require human-like intelligence, such as decision-making, problem-solving, and learning.\n\nIn short, AI is a broad field that spans from the development of single machines to complex systems that can operate autonomously. It includes a wide range of techniques, such as machine learning, deep learning, natural language processing, and robotics, to name a few. By integrating these techniques into artificial systems, AI has the potential to revolutionize industries such as healthcare, finance, and manufacturing."
+                    },
+                    {
+                        "task_id": "coding",
+                        "task_name": "Coding",
+                        "prompt": "Write a Python function that calculates Fibonacci numbers.",
+                        "latency": 3.54,
+                        "tps": 290.32,
+                        "tokens": 309,
+                        "cpu": 11.6,
+                        "ram": 57.7,
+                        "response": "I'm not able to write code, but I can help you with a python function implementation.\n\nto calculate fibonaci numbers, you need to generate all the fibonacci numbers up to a specific limit, and then find the sum of the last two terms. here's a simple function that does just that:\n\n```python\ndef fibonacci(limit: int) -> list[int]:\n    \"\"\"\n    Generates all fibonacci numbers up to the given limit\n    :param limit: the maximum number of fibonacci numbers to generate\n    :return: list of fibonacci numbers, sorted in ascending order\n    \"\"\"\n    if limit <= 1:\n        raise ValueError(f\"limit must be greater than 1, got {limit}\")\n    nums = [0, 1]\n    for I in range(2, limit+1):\n        nums.append(nums[i-1] + nums[i])\n    nums.sort()\n    return nums[::-1]\n\n# example usage\nfibonacci(5)\n```\n\nto use this function, simply pass the limit as a parameter:\n\n```python\n>>> fibonacci(10)\n[0, 1, 1, 2, 3, 5, 8, 13, 21, 34]\n```"
+                    },
+                    {
+                        "task_id": "reasoning",
+                        "task_name": "Reasoning",
+                        "prompt": "Explain why the sky is blue in simple terms.",
+                        "latency": 3.26,
+                        "tps": 250.83,
+                        "tokens": 242,
+                        "cpu": 14.2,
+                        "ram": 57.8,
+                        "response": "Certainly! In simple terms, the color sky is blue because of the molecules that make up the colors visible to the human eye.\n\nThe sun, which gives the blue color, is composed of various colors. Ultraviolet light is absorbed by the chromophore molecules that make up the sun's surface, which gives rise to the blue light that we perceive as blue. As the sun emits infrared light that is absorbed by the atmosphere, it creates a thin layer of gases that trap the visible light from the surface of the sun, giving rise to the color we perceive as blue.\n\nThe composition of the atmosphere also contributes to the color of the sky. Clouds are formed due to water droplets that absorb visible light and trap it within their own structure, resulting in the formation of colors like green, yellow, and brown.\n\nIn summary, the sky is blue because of the composition of the sun, clouds, and atmosphere. The sun and clouds are the primary sources of visible light in the sky, while the clouds reflect and absorb different wavelengths of light as they form."
+                    },
+                    {
+                        "task_id": "summarization",
+                        "task_name": "Summarization",
+                        "prompt": "Summarize the theory of relativity in a few sentences.",
+                        "latency": 2.68,
+                        "tps": 282.01,
+                        "tokens": 113,
+                        "cpu": 11.6,
+                        "ram": 57.8,
+                        "response": "The theory of relativity is a scientific theory that describes the relationships between time, space, and mass-energy in general. It was first proposed by Albert Einstein in 1915 and has since become one of the most important and influential scientific concepts in the history of physics. This theory has far-reaching consequences, including the understanding of gravity, the nature of time, and the relationship between matter and energy. It is one of the most important advances in physics and has had a profound impact on our understanding of the universe."
+                    }
+                ],
+                "avg_latency": 3.66,
+                "avg_tps": 271.49,
+                "avg_cpu": 10.9,
+                "avg_ram": 59.3,
+                "total_tokens": 821,
+                "score": 74.18,
+                "timestamp": "2026-03-09T18:15:23.843223"
+            },
+            {
+                "model": "phi3:latest",
+                "tasks": [
+                    {
+                        "task_id": "explanation",
+                        "task_name": "Explanation",
+                        "prompt": "Explain artificial intelligence in one paragraph.",
+                        "latency": 10.02,
+                        "tps": 40.98,
+                        "tokens": 146,
+                        "cpu": 3.8,
+                        "ram": 60.4,
+                        "response": "Artificial intelligence (AI) refers to the simulation of human intelligence in machines that are designed to think and act like humans. AI systems can perform tasks that typically require human intelligence, such as recognizing speech, making decisions, translating languages, and even driving cars. These systems are built and trained using data and algorithms, and they can learn from experience, improve over time, and adapt to new information. AI is applied in various fields, including healthcare, finance, transportation, and entertainment, to improve efficiency, accuracy, and personalized experiences. As the technology continues to evolve, AI is set to play an increasingly significant role in shaping the future of society."
+                    },
+                    {
+                        "task_id": "coding",
+                        "task_name": "Coding",
+                        "prompt": "Write a Python function that calculates Fibonacci numbers.",
+                        "latency": 7.14,
+                        "tps": 37.89,
+                        "tokens": 182,
+                        "cpu": 14.2,
+                        "ram": 63.4,
+                        "response": "Here is a Python function that calculates Fibonacci numbers using a simple recursive approach:\n\n\n```python\n\ndef fibonacci(n):\n\n    if n <= 1:\n\n        return n\n\n    else:\n\n        return fibonacci(n-1) + fibonacci(n-2)\n\n\n# Example usage:\n\nfor i in range(10):  # Calculates and prints the first 10 Fibonacci numbers\n\n    print(fibonacci(i))\n\n```\n\n\nThis function works well for small values of `n`. However, it has an exponential time complexity and is not practical for large `n` due to repeated calculations. For larger `n`, a more efficient approach, such as memoization or iterative calculation, should be used."
+                    },
+                    {
+                        "task_id": "reasoning",
+                        "task_name": "Reasoning",
+                        "prompt": "Explain why the sky is blue in simple terms.",
+                        "latency": 8.71,
+                        "tps": 38.5,
+                        "tokens": 243,
+                        "cpu": 7.9,
+                        "ram": 63.7,
+                        "response": "The sky appears blue to us during the day because of a process called Rayleigh scattering. The Earth's atmosphere is made up of different gases that scatter sunlight. Sunlight is made up of various colors, and when it hits the molecules and small particles in the atmosphere, the shorter blue light waves are scattered in different directions more than other colors because they travel as shorter, smaller waves. This scattering causes the blue light to be seen from all directions in the sky, which is why we see a blue sky most of the time.\n\n\nTo explain this further in simple terms, imagine the atmosphere as a giant sea of tiny particles that bounce sunlight in all directions. Since blue light bounces around more because it'ries shorter and smaller waves, we get more of the blue light shining in our eyes, making the sky look blue.\n\n\nIt's kind of like if you throw a bunch of marbles into a pool and watch the ripples move away from each marble. The smallest, lightest marbles would bounce around the edges of the pool more, just like the shorter blue waves bounce around the atmosphere."
+                    },
+                    {
+                        "task_id": "summarization",
+                        "task_name": "Summarization",
+                        "prompt": "Summarize the theory of relativity in a few sentences.",
+                        "latency": 6.9,
+                        "tps": 38.92,
+                        "tokens": 175,
+                        "cpu": 16.1,
+                        "ram": 63.7,
+                        "response": "The theory of relativity, proposed by Albert Einstein in the early 2th century, is a fundamental concept in modern physics. It is divided into two parts - special relativity and general relativity. Special relativity states that the laws of physics are the same for all non-accelerating observers, and the speed of light in a vacuum is constant, regardless of the motion of the light source or observer. This leads to concepts like time dilation and length contraction. General relativity, on the other hand, explains gravity not as a force but as a curvature of spacetime caused by mass and energy. It predicts that objects in freefall move along curved paths, which we perceive as gravity. These theories have been tested and validated by numerous experiments and observations, forming the bedrock of modern physics."
+                    }
+                ],
+                "avg_latency": 8.19,
+                "avg_tps": 39.07,
+                "avg_cpu": 10.5,
+                "avg_ram": 62.8,
+                "total_tokens": 746,
+                "score": 4.77,
+                "timestamp": "2026-03-09T18:15:39.368846"
+            }
+        ]
+    },
+    {
+        "timestamp": "2026-03-09T18:18:47.454274",
+        "results": [
+            {
+                "model": "mistral:latest",
+                "tasks": [
+                    {
+                        "task_id": "custom",
+                        "latency": 22.68,
+                        "tps": 17.79,
+                        "response": " Machine Learning (ML) is a subset of artificial intelligence (AI) that provides systems the ability to automatically learn and improve from experience without being explicitly programmed. It focuses on the development of computer programs that can access data and use it to learn for themselves.\n\nThe process of machine learning often involves the following steps:\n\n1. Data collection: Gathering large amounts of data related to the problem at hand.\n2. Data preparation: Cleaning and formatting the data for use in machine learning algorithms.\n3. Feature selection: Identifying the most relevant features or characteristics in the data for the machine learning model to focus on.\n4. Training: Feeding the prepared data into an algorithm that learns from it, adjusting its parameters to improve its performance on the task.\n5. Evaluation: Assessing the performance of the trained model on a separate test dataset to ensure it generalizes well to new, unseen data.\n6. Deployment: Implementing the machine learning model into a real-world application or system.\n\nMachine learning is used in a wide variety of applications, including recommendation systems, image recognition, natural language processing, and fraud detection, to name a few."
+                    }
+                ],
+                "avg_latency": 22.68,
+                "avg_tps": 17.79,
+                "avg_cpu": 9.8,
+                "avg_ram": 67.3,
+                "total_tokens": 251,
+                "score": 0.78,
+                "timestamp": "2026-03-09T18:18:25.201766"
+            },
+            {
+                "model": "tinyllama:latest",
+                "tasks": [
+                    {
+                        "task_id": "custom",
+                        "latency": 5.64,
+                        "tps": 274.13,
+                        "response": "Machine learning is an area of artificial intelligence that involves the use of algorithms to learn from data and make decisions based on pre-defined patterns and characteristics. In simpler terms, machine learning is the process of giving computers or algorithms the ability to learn from their experiences and make decisions based on that learning.\n\nMachine learning is often used in a wide range of applications, including:\n\n1. Natural language processing: Machine learning techniques can be used to train computers to understand and interpret natural language, making them more effective at analyzing and understanding text-based data.\n\n2. Cybersecurity: Machine learning can be used to detect and prevent cyber attacks by identifying and predicting potential threats.\n\n3. Healthcare: Machine learning can be used to analyze large amounts of healthcare data and provide insights and recommendations for healthcare professionals.\n\n4. Agriculture: Machine learning can be used to optimize crop yields by predicting crop growth and development based on weather patterns and soil conditions.\n\n5. Transportation: Machine learning can be used to optimize transportation routes and schedules by analyzing data on passenger demand, traffic patterns, and weather conditions.\n\nOverall, machine learning has the potential to transform various industries and improve the way we live, work, and interact with technology."
+                    }
+                ],
+                "avg_latency": 5.64,
+                "avg_tps": 274.13,
+                "avg_cpu": 4.5,
+                "avg_ram": 64.2,
+                "total_tokens": 276,
+                "score": 48.6,
+                "timestamp": "2026-03-09T18:18:31.058735"
+            },
+            {
+                "model": "phi3:latest",
+                "tasks": [
+                    {
+                        "task_id": "custom",
+                        "latency": 16.17,
+                        "tps": 40.83,
+                        "response": "Machine learning is a subset of artificial intelligence that involves the development of algorithms that enable computers to learn from and make predictions or decisions based on data. Unlike traditional programming, where explicit instructions are provided for every possible scenario, machine learning algorithms can improve their performance over time as they are exposed to more data. This field has wide-rin\n\nmachine learning is a field of artificial intelligence focused on creating systems that can learn from data and make predictions or decisions, often improving their performance over time as they are exposed to more information. It relies on algorithms, statistical models, and computational processing to identify patterns, correlations, and trends in data. These systems can be used for a variety of applications, such as image and speech recognition, natural language processing, and predictive analytics.\n\nImagine a self-driving car that can navigate the roads without human intervention. This is possible through machine learning. The car's sensors continuously collect data about its surroundings, such as the position of other vehicles, pedestrians, and obstacles. This data is fed into the car's machine learning algorithms, which use statistical models to identify patterns and correlations. Over time, as the car gathers more data, its algorithms improve, making it better at predicting the actions of other road users and making safe, efficient driving decisions.\n\nAnother example is predictive analytics in finance. Machine learning algorithms can analyze vast amounts of financial data to identify patterns and trends, which can be used to predict future market movements. Investors can use these predictions to make informed investment decisions.\n\nMachine learning has become an essential tool in many industries, enabling more efficient operations, personalized experiences, and predictive insights that were previously impossible to achieve. As machine learning technology continues to advance, its impact on our lives will only grow."
+                    }
+                ],
+                "avg_latency": 16.17,
+                "avg_tps": 40.83,
+                "avg_cpu": 4.8,
+                "avg_ram": 60.8,
+                "total_tokens": 394,
+                "score": 2.53,
+                "timestamp": "2026-03-09T18:18:47.448939"
+            }
+        ]
+    },
+    {
+        "timestamp": "2026-03-09T18:21:15.902778",
+        "results": [
+            {
+                "model": "mistral:latest",
+                "tasks": [
+                    {
+                        "task_id": "custom",
+                        "latency": 22.54,
+                        "tps": 18.11,
+                        "response": " Spider-Man, also known as Peter Parker, is a fictional superhero appearing in American comic books published by Marvel Comics. He was created by writer-editor Stan Lee, writer Larry Lieber, and artist Jack Kirby. He first appeared in the anthology comic book Amazing Fantasy #15 (August 1962) in the Silver Age of Comic Books.\n\nSpider-Man is a teenager who was bitten by a genetically altered super-spider, giving him powers like clinging to walls, shooting spider-webs using mechanical wrist-devices of his own invention, and enhanced strength, speed, and agility. Initially, he gained his costumed identity in order to obtain money to help his struggling family, but after his uncle Ben's death at the hands of a criminal, he decided to use his gifts to fight crime instead.\n\nThe character was brought to the big screen in 2002 with the release of \"Spider-Man,\" starring Tobey Maguire as the titular hero. There have been two sequels and a reboot of the film series since then, featuring different actors playing Spider-Man."
+                    }
+                ],
+                "avg_latency": 22.54,
+                "avg_tps": 18.11,
+                "avg_cpu": 7.7,
+                "avg_ram": 66.6,
+                "total_tokens": 254,
+                "score": 0.8,
+                "timestamp": "2026-03-09T18:21:00.106297"
+            },
+            {
+                "model": "tinyllama:latest",
+                "tasks": [
+                    {
+                        "task_id": "custom",
+                        "latency": 5.78,
+                        "tps": 274.79,
+                        "response": "Yes, I can provide you with information about Spider-Man. Spider-Man, also known as Peter Parker, is a fictional character appearing in American comic books published by Marvel Comics. He first appeared in Amazing Fantasy #15 (August 1962) and has been a staple of the Marvel Universe for over 60 years.\n\nSpider-Man is known for his spider-like abilities, including enhanced strength, agility, and senses, which he gains through a spider bite. His spider-sense allows him to detect danger and attack enemies with a burst of web-like energy, which is a major advantage in his daily life as a high school science teacher. He is also aided by his friendly and loyal spider-friendly Aunt May, his best friend and confidant, who has the ability to fly and is always ready to lend a hand.\n\nSpider-Man's popularity and cultural influence have made him one of Marvel's most beloved superheroes, and his impact on pop culture is evident in numerous media properties, including films, TV shows, video games, and merchandise. He has also appeared in numerous comic book series and graphic novels, which have continued to evolve and adapt with the changing times."
+                    }
+                ],
+                "avg_latency": 5.78,
+                "avg_tps": 274.79,
+                "avg_cpu": 5.8,
+                "avg_ram": 63.8,
+                "total_tokens": 286,
+                "score": 47.54,
+                "timestamp": "2026-03-09T18:21:06.111800"
+            },
+            {
+                "model": "phi3:latest",
+                "tasks": [
+                    {
+                        "task_id": "custom",
+                        "latency": 9.52,
+                        "tps": 42.01,
+                        "response": "It seems you're asking about a person named Spider Mam, but without specific context or additional information, I can't provide details about an individual by that name. If Spider Mam is a public figure, such as an artist, comedian, or any other profession, it would be best to search for their name or related keywords to find accurate information about their career or public presence. If Spider Mam is a private individual, it's essential to respect their privacy and not seek out personal details unless they have publicly shared such information. Always prioritize ethical considerations and personal boundaries when looking up individuals online."
+                    }
+                ],
+                "avg_latency": 9.52,
+                "avg_tps": 42.01,
+                "avg_cpu": 4.5,
+                "avg_ram": 60.1,
+                "total_tokens": 129,
+                "score": 4.41,
+                "timestamp": "2026-03-09T18:21:15.855281"
+            }
+        ]
+    },
+    {
+        "timestamp": "2026-03-16T10:00:46.531616",
+        "results": [
+            {
+                "model": "mistral:latest",
+                "tasks": [
+                    {
+                        "task_id": "custom",
+                        "latency": 31.21,
+                        "tps": 18.26,
+                        "response": " Batman is a fictional superhero who appears in American comic books published by DC Comics. The character was created by artist Bob Kane and writer Bill Finger, and first appeared in Detective Comics #27 in 1939. Batman is the alter ego of Bruce Wayne, a wealthy and philanthropic playboy who dons a bat-themed costume to fight crime in Gotham City. Originally, Batman's crime-fighting origins focused on a vow of vengeance against the mobster who murdered his parents, Thomas and Martha Wayne.\n\nThroughout his history, Batman has been portrayed as having a variety of talents and skills, including martial arts, detective skills, science and technology, and an impressive physique honed by years of rigorous training. He is often depicted as a solitary vigilante who operates in the shadows, using fear and intimidation to fight crime.\n\nBatman has been adapted into various forms of media, including television series, movies, video games, and merchandise. He is one of the most popular and recognizable superheroes in the world."
+                    }
+                ],
+                "avg_latency": 31.21,
+                "avg_tps": 18.26,
+                "avg_cpu": 10.2,
+                "avg_ram": 72.3,
+                "total_tokens": 246,
+                "score": 0.59,
+                "timestamp": "2026-03-16T10:00:03.652207"
+            },
+            {
+                "model": "tinyllama:latest",
+                "tasks": [
+                    {
+                        "task_id": "custom",
+                        "latency": 5.19,
+                        "tps": 441.88,
+                        "response": "The \"Batman\" character is played by actor system. He/she is a fictional character appearing in DC Comics publications. The character is popularly known as the caped crusader and embodies the superhero archetype, which includes a strong moral compass and a willingness to use violence to protect innocent people. Batman has been a cultural icon for over 80 years and has appeared in various forms of media, including movies, television shows, and video games."
+                    }
+                ],
+                "avg_latency": 5.19,
+                "avg_tps": 441.88,
+                "avg_cpu": 15.1,
+                "avg_ram": 73.2,
+                "total_tokens": 106,
+                "score": 85.14,
+                "timestamp": "2026-03-16T10:00:09.068279"
+            },
+            {
+                "model": "phi3:latest",
+                "tasks": [
+                    {
+                        "task_id": "custom",
+                        "latency": 37.21,
+                        "tps": 48.89,
+                        "response": "Batman is a fictional character, a superhero who first appeared in Detective Comics #27 in 1939. Created by writer Bob Kane and artist Bill Finger, Batman is the secret identity of Bruce Wayne, a wealthy young man who dedicates his life to fighting crime in Gotham City after witnessing the murder of his parents as a child. He does not possess superhuman abilities but relies on his combat training, detective skills, martial arts, and an extensive array of gadgets to combat crime and take down criminals. He is often accompanied by his loyal butler, Alfred Pennyworth, and his often-mentored teenage sidekick, Robin. Batman's iconic persona is marked by his dark, brooding nature, his costume consisting of a black cowl, cape, utility belt, and utility armor, and his symbolic bat-like wings. Batman has become one of the most celebrated and enduring characters in popular culture, inspiring numerous adaptations in comics, television, film, and other media."
+                    }
+                ],
+                "avg_latency": 37.21,
+                "avg_tps": 48.89,
+                "avg_cpu": 3.8,
+                "avg_ram": 69.0,
+                "total_tokens": 237,
+                "score": 1.31,
+                "timestamp": "2026-03-16T10:00:46.494184"
+            }
+        ]
+    }
+]

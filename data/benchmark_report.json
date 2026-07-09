@@ -1,0 +1,56 @@
+[
+    {
+        "model": "mistral:latest",
+        "tasks": [
+            {
+                "task_id": "custom",
+                "latency": 31.21,
+                "tps": 18.26,
+                "response": " Batman is a fictional superhero who appears in American comic books published by DC Comics. The character was created by artist Bob Kane and writer Bill Finger, and first appeared in Detective Comics #27 in 1939. Batman is the alter ego of Bruce Wayne, a wealthy and philanthropic playboy who dons a bat-themed costume to fight crime in Gotham City. Originally, Batman's crime-fighting origins focused on a vow of vengeance against the mobster who murdered his parents, Thomas and Martha Wayne.\n\nThroughout his history, Batman has been portrayed as having a variety of talents and skills, including martial arts, detective skills, science and technology, and an impressive physique honed by years of rigorous training. He is often depicted as a solitary vigilante who operates in the shadows, using fear and intimidation to fight crime.\n\nBatman has been adapted into various forms of media, including television series, movies, video games, and merchandise. He is one of the most popular and recognizable superheroes in the world."
+            }
+        ],
+        "avg_latency": 31.21,
+        "avg_tps": 18.26,
+        "avg_cpu": 10.2,
+        "avg_ram": 72.3,
+        "total_tokens": 246,
+        "score": 0.59,
+        "timestamp": "2026-03-16T10:00:03.652207"
+    },
+    {
+        "model": "tinyllama:latest",
+        "tasks": [
+            {
+                "task_id": "custom",
+                "latency": 5.19,
+                "tps": 441.88,
+                "response": "The \"Batman\" character is played by actor system. He/she is a fictional character appearing in DC Comics publications. The character is popularly known as the caped crusader and embodies the superhero archetype, which includes a strong moral compass and a willingness to use violence to protect innocent people. Batman has been a cultural icon for over 80 years and has appeared in various forms of media, including movies, television shows, and video games."
+            }
+        ],
+        "avg_latency": 5.19,
+        "avg_tps": 441.88,
+        "avg_cpu": 15.1,
+        "avg_ram": 73.2,
+        "total_tokens": 106,
+        "score": 85.14,
+        "timestamp": "2026-03-16T10:00:09.068279"
+    },
+    {
+        "model": "phi3:latest",
+        "tasks": [
+            {
+                "task_id": "custom",
+                "latency": 37.21,
+                "tps": 48.89,
+                "response": "Batman is a fictional character, a superhero who first appeared in Detective Comics #27 in 1939. Created by writer Bob Kane and artist Bill Finger, Batman is the secret identity of Bruce Wayne, a wealthy young man who dedicates his life to fighting crime in Gotham City after witnessing the murder of his parents as a child. He does not possess superhuman abilities but relies on his combat training, detective skills, martial arts, and an extensive array of gadgets to combat crime and take down criminals. He is often accompanied by his loyal butler, Alfred Pennyworth, and his often-mentored teenage sidekick, Robin. Batman's iconic persona is marked by his dark, brooding nature, his costume consisting of a black cowl, cape, utility belt, and utility armor, and his symbolic bat-like wings. Batman has become one of the most celebrated and enduring characters in popular culture, inspiring numerous adaptations in comics, television, film, and other media."
+            }
+        ],
+        "avg_latency": 37.21,
+        "avg_tps": 48.89,
+        "avg_cpu": 3.8,
+        "avg_ram": 69.0,
+        "total_tokens": 237,
+        "score": 1.31,
+        "timestamp": "2026-03-16T10:00:46.494184"
+    }
+]
