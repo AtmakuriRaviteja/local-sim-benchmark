@@ -20,10 +20,10 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 
 async function fetchModels() {
+    const modelsList = document.getElementById("sidebar-models-list");
     try {
         const modRes  = await fetch(`${API_BASE_URL}/models`);
         const modData = await modRes.json();
-        const modelsList = document.getElementById("sidebar-models-list");
         if (modelsList && modData.models && modData.models.length > 0) {
             modelsList.innerHTML = "";
             modData.models.forEach(m => {
@@ -44,30 +44,35 @@ async function fetchModels() {
                 opt.textContent = m.replace(":latest", "");
                 modelSelect.appendChild(opt);
             });
-            // highlight first
             if (modelsList.firstChild) modelsList.firstChild.classList.add("active");
+        } else if (modelsList) {
+            modelsList.innerHTML = `<div class="model-item" style="opacity:0.6; cursor:default;">No local models (cloud demo)</div>`;
+            if (modelSelect) modelSelect.innerHTML = `<option value="tinyllama">tinyllama (demo)</option>`;
         }
-    } catch (e) { console.warn("Failed to load models", e); }
+    } catch (e) {
+        console.warn("Failed to load models", e);
+        if (modelsList) modelsList.innerHTML = `<div class="model-item" style="opacity:0.6; cursor:default;">Unavailable</div>`;
+    }
 }
 
 async function fetchSystemInfo() {
+    const cpuEl = document.getElementById("sys-cpu");
+    const ramEl = document.getElementById("sys-ram");
+    const osEl  = document.getElementById("sys-os");      // this is actually the "Runtime" field in your HTML
+    const gpuEl = document.getElementById("sys-gpu");
     try {
         const sysRes  = await fetch(`${API_BASE_URL}/system-info`);
         const sysData = await sysRes.json();
-        const cpuEl = document.getElementById("sys-cpu");
-        const ramEl = document.getElementById("sys-ram");
-        const osEl  = document.getElementById("sys-os");
-        if (cpuEl) cpuEl.textContent = sysData.cpu      || sysData.cpu_model  || "N/A";
-        if (ramEl) ramEl.textContent = sysData.ram      || sysData.total_ram  || "N/A";
-        if (osEl)  osEl.textContent  = sysData.os       || sysData.platform   || "N/A";
+        if (cpuEl) cpuEl.textContent = sysData.cpu     || sysData.cpu_model || "N/A";
+        if (ramEl) ramEl.textContent = sysData.ram     || sysData.total_ram || "N/A";
+        if (gpuEl) gpuEl.textContent = sysData.gpu     || "N/A";
+        if (osEl)  osEl.textContent  = sysData.runtime || sysData.os || sysData.platform || "N/A";
     } catch (e) {
-        ["sys-cpu","sys-ram","sys-os"].forEach(id => {
-            const el = document.getElementById(id);
+        [cpuEl, ramEl, osEl, gpuEl].forEach(el => {
             if (el) el.textContent = "Unavailable";
         });
     }
 }
-
 // ════════════════════════════════════════════════════════════════════════════
 // HELPERS
 // ════════════════════════════════════════════════════════════════════════════
