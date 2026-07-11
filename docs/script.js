@@ -1,4 +1,4 @@
-const API_BASE_URL = "http://localhost:8000";
+const API_BASE_URL = "https://local-sim-benchmark.onrender.com";
 
 const promptInput      = document.getElementById("prompt-input");
 const modelSelect      = document.getElementById("model-select");
