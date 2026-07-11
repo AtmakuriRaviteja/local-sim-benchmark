@@ -8,10 +8,10 @@ import requests
 from evaluation_suite import generate_report_content, run_evaluation
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import Response, StreamingResponse
 
 # Internal imports
-from ollama_client import ask_ollama, stream_ollama
+from ollama_client import ask_ollama, generate_mock_response, stream_ollama
 from pydantic import BaseModel
 from utils import (
     get_chat_history,
@@ -200,11 +200,19 @@ async def get_report(format: str = "json"):
 
 @app.post("/benchmark")
 async def benchmark(req: BenchmarkRequest):
-    """Streams a single model benchmark."""
-    return StreamingResponse(
-        stream_ollama(req.model, req.prompt),
-        media_type="text/event-stream"
-    )
+    """Runs a single model benchmark and returns JSON metrics (latency, TPS, tokens, response)."""
+    res = ask_ollama(req.model, req.prompt)
+    if "error" in res:
+        raise HTTPException(status_code=500, detail=res["error"])
+    return {
+        "model": res["model"],
+        "response": res["response"],
+        "latency": res["response_time"],
+        "tokens_per_sec": res["tokens_per_sec"],
+        "tokens": res["token_count"],
+        "cpu": res["system_metrics"]["cpu"],
+        "ram": res["system_metrics"]["ram"],
+    }
 
 
 # ── NEW: Multi-model Comparison ────────────────────────────────────────────────
@@ -513,6 +521,10 @@ async def smart_query(req: SmartQueryRequest):
 
     # 2. Fallback: Local model processing (Ollama)
     result = ask_ollama(req.model, req.prompt)
+
+    # If Ollama is not reachable, return a graceful mock response
+    if "error" in result and "response" not in result:
+        result = generate_mock_response(req.model, req.prompt)
 
     if "error" not in result:
         save_chat_message(req.prompt, req.model, result["response"])

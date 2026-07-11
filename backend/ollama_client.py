@@ -40,13 +40,13 @@ def generate_mock_response(model: str, prompt: str):
 def ask_ollama(model: str, prompt: str):
     """
     Sends a prompt to the Ollama API and returns the response, timing, and system metrics.
-    Falls back to a simulated response if Ollama isn't reachable (e.g. cloud deployment).
+    Returns an error dict if Ollama isn't reachable.
     """
     payload = {"model": model, "prompt": prompt, "stream": False}
     start_metrics = get_hardware_metrics()
     start_time = time.time()
     try:
-        response = requests.post(OLLAMA_API_URL, json=payload, timeout=300)
+        response = requests.post(OLLAMA_API_URL, json=payload, timeout=(3, 300))
         response.raise_for_status()
         end_time = time.time()
         end_metrics = get_hardware_metrics()
@@ -71,8 +71,9 @@ def ask_ollama(model: str, prompt: str):
             },
         }
     except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
-        # Ollama isn't reachable (expected on cloud deployments) - use mock data
-        return generate_mock_response(model, prompt)
+        return {
+            "error": "Ollama is not running. Please start Ollama and try again.",
+        }
     except Exception as e:
         return {
             "model": model,
@@ -84,16 +85,38 @@ def ask_ollama(model: str, prompt: str):
             "system_metrics": {"cpu": 0, "ram": 0},
         }
 
+def stream_mock_response(model: str):
+    """
+    Streams a mock response instantly when Ollama is not reachable.
+    Yields proper SSE chunk + final events so the UI renders them normally.
+    """
+    mock = generate_mock_response(model, "")
+    # Emit the full response as one chunk — no artificial delay
+    yield f"data: {json.dumps({'type': 'chunk', 'text': mock['response']})}\n\n"
+    final_data = {
+        "type": "final",
+        "model": model,
+        "response_time": mock["response_time"],
+        "response_length": mock["response_length"],
+        "token_count": mock["token_count"],
+        "tokens_per_sec": mock["tokens_per_sec"],
+        "system_metrics": mock["system_metrics"],
+        "mock": True,
+    }
+    yield f"data: {json.dumps(final_data)}\n\n"
+
+
 def stream_ollama(model: str, prompt: str):
     """
     Sends a prompt to the Ollama API with stream=True.
     Yields chunks as Server-Sent Events (SSE) format.
+    Falls back to a streamed mock response if Ollama is not reachable.
     """
     payload = {"model": model, "prompt": prompt, "stream": True}
     start_metrics = get_hardware_metrics()
     start_time = time.time()
     try:
-        response = requests.post(OLLAMA_API_URL, json=payload, stream=True, timeout=300)
+        response = requests.post(OLLAMA_API_URL, json=payload, stream=True, timeout=(3, 300))
         response.raise_for_status()
         
         for line in response.iter_lines():
@@ -128,18 +151,11 @@ def stream_ollama(model: str, prompt: str):
                     yield f"data: {json.dumps(chunk_data)}\n\n"
                     
     except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
-        # Fallback to mock data by yielding chunks slowly
-        mock_res = generate_mock_response(model, prompt)
-        words = mock_res["response"].split(" ")
-        for word in words:
-            chunk_data = {"type": "chunk", "text": word + " "}
-            yield f"data: {json.dumps(chunk_data)}\n\n"
-            time.sleep(0.05)
-            
-        mock_res["type"] = "final"
-        yield f"data: {json.dumps(mock_res)}\n\n"
-        
+        # Ollama not running — stream a mock response so the UI still works
+        yield from stream_mock_response(model)
+
     except Exception as e:
         error_data = {"type": "error", "error": str(e)}
         yield f"data: {json.dumps(error_data)}\n\n"
+
 

@@ -22,9 +22,21 @@ def ask(prompt: str, model: str):
 
 
 @app.get("/benchmark")
-def benchmark(prompt: str):
-    """Endpoint to run a benchmark across all models."""
-    return run_benchmark(prompt)
+def benchmark(prompt: str, model: str = None):
+    """Endpoint to run a benchmark across all models or a single model if specified."""
+    return run_benchmark(prompt, model)
+
+@app.get("/suite")
+def suite(model: str):
+    """Run an evaluation suite on a specific model."""
+    from benchmark import run_suite
+    return run_suite(model)
+
+@app.get("/dataset")
+def dataset(model: str):
+    """Run a dataset evaluation on a specific model."""
+    from benchmark import run_dataset
+    return run_dataset(model)
 
 
 if __name__ == "__main__":

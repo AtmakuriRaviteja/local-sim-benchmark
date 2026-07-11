@@ -1,1149 +1,792 @@
-const API_BASE_URL = 'https://local-sim-benchmark.onrender.com';
+const API_BASE_URL = "http://localhost:8000";
 
-let chartInstance = null;
-let models = [];
-let currentResults = [];
-let currentMetric = 'score';
-// ── Persistent History (localStorage) ───────────────────────────────────────
-let runHistory = JSON.parse(localStorage.getItem('slm_history')) || [];
+const promptInput      = document.getElementById("prompt-input");
+const modelSelect      = document.getElementById("model-select");
+const askBtn           = document.getElementById("ask-btn");
+const benchmarkBtn     = document.getElementById("benchmark-btn");
+const compareBtn       = document.getElementById("compare-btn");
+const suiteBtn         = document.getElementById("suite-btn");
+const datasetBtn       = document.getElementById("dataset-btn");
+const resultsContainer = document.getElementById("results-container");
 
-// ── Benchmark Prompt Presets ──────────────────────────────────────────────────
-const BENCHMARK_PROMPTS = {
-    speed:      "Explain what machine learning is in exactly 50 words. Be clear and concise.",
-    reasoning:  "A farmer has 17 sheep. All but 9 die. How many sheep are left? Explain your reasoning step by step.",
-    coding:     "Write a Python function to check if a number is prime. Optimize for performance and explain the time complexity.",
-    memory:     "Remember this number: 47291. Now explain what a database is in 3 sentences. After that, repeat the number.",
-    stress:     "List 20 advantages of artificial intelligence in bullet points.",
-    comparison: "Explain recursion with a simple real-life example in under 100 words."
-};
-
-function fillPreset(key) {
-    const input = document.getElementById('prompt-input');
-    input.value = BENCHMARK_PROMPTS[key];
-    input.style.height = 'auto';
-    input.style.height = input.scrollHeight + 'px';
-
-    document.querySelectorAll('.preset-btn').forEach(btn => btn.classList.remove('active-preset'));
-    const activeBtn = document.getElementById(`preset-${key}`);
-    if (activeBtn) activeBtn.classList.add('active-preset');
-
-    input.focus();
-    input.setSelectionRange(input.value.length, input.value.length);
-}
-
-// ── Initialization ────────────────────────────────────────────────────────────
-window.onload = async () => {
-    await fetchModels();
-    setupInputHandlers();
-    renderHistory(); // Show persisted history immediately
-};
-
+// ════════════════════════════════════════════════════════════════════════════
+// ON LOAD: populate models dropdown + live system info
+// ════════════════════════════════════════════════════════════════════════════
+document.addEventListener("DOMContentLoaded", async () => {
+    fetchModels();
+    fetchSystemInfo();
+});
 
 async function fetchModels() {
     try {
-        const res = await fetch(`${API_BASE_URL}/models`);
-        const data = await res.json();
-        models = data.models || [];
-
-        const sidebar = document.getElementById('sidebar-models');
-        const select  = document.getElementById('model-select');
-
-        sidebar.innerHTML = models.map(m => `<div class="model-tag">${m}</div>`).join('');
-
-        // Build option list — phi3 first if present
-        const sorted = [...models].sort((a, b) => {
-            if (a.toLowerCase().startsWith('phi')) return -1;
-            if (b.toLowerCase().startsWith('phi')) return  1;
-            return 0;
-        });
-        select.innerHTML = sorted.map(m =>
-            `<option value="${m}">${m.charAt(0).toUpperCase() + m.slice(1).split(':')[0]}</option>`
-        ).join('');
-    } catch (err) {
-        console.error("Failed to fetch models", err);
-    }
-}
-
-function setupInputHandlers() {
-    const input = document.getElementById('prompt-input');
-    input.addEventListener('input', function() {
-        this.style.height = 'auto';
-        this.style.height = (this.scrollHeight) + 'px';
-        // Clear preset highlight when user types their own text
-        document.querySelectorAll('.preset-btn').forEach(btn => btn.classList.remove('active-preset'));
-    });
-
-    input.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            document.getElementById('ask-btn').click();
-        }
-    });
-}
-
-// ── Chat (Ask Model) ──────────────────────────────────────────────────────────
-document.getElementById('ask-btn').onclick = async () => {
-    const input  = document.getElementById('prompt-input');
-    const prompt = input.value.trim();
-    const model  = document.getElementById('model-select').value;
-
-    if (!prompt) return;
-
-    appendMessage('user', prompt);
-    input.value = '';
-    input.style.height = 'auto';
-
-    document.getElementById('analytics-hub').classList.add('hidden');
-
-    showLoader(true);
-    try {
-        const res  = await fetch(`${API_BASE_URL}/smart-query`, {
-            method:  'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body:    JSON.stringify({ model, prompt })
-        });
-        const data = await res.json();
-
-        // 1. Handle live movie results (Array)
-        if (Array.isArray(data)) {
-            let html = `<div style="margin-bottom:0.6rem;font-weight:700;color:var(--accent-primary);display:flex;align-items:center;gap:6px;">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="7" x2="7" y2="7"/><line x1="2" y1="17" x2="7" y2="17"/><line x1="17" y1="17" x2="22" y2="17"/><line x1="17" y1="7" x2="22" y2="7"/></svg>
-                            Latest Movies from OMDb
-                        </div>`;
-            data.forEach(m => {
-                html += `<div class="movie-result-item">
-                            <span class="movie-dot">●</span> <strong>${m.title}</strong> <span style="opacity:0.6;">(${m.year})</span>
-                         </div>`;
+        const modRes  = await fetch(`${API_BASE_URL}/models`);
+        const modData = await modRes.json();
+        const modelsList = document.getElementById("sidebar-models-list");
+        if (modelsList && modData.models && modData.models.length > 0) {
+            modelsList.innerHTML = "";
+            modData.models.forEach(m => {
+                const div = document.createElement("div");
+                div.className = "model-item";
+                div.innerHTML = `<div class="model-name"><span class="status-dot"></span>${m}</div><span class="model-size">Loaded</span>`;
+                div.onclick = () => {
+                    document.querySelectorAll(".model-item").forEach(el => el.classList.remove("active"));
+                    div.classList.add("active");
+                    modelSelect.value = m;
+                };
+                modelsList.appendChild(div);
             });
-            appendMessage('ai', html, '📡 Live API Data · OMDb');
-            return;
+            modelSelect.innerHTML = "";
+            modData.models.forEach(m => {
+                const opt = document.createElement("option");
+                opt.value = m;
+                opt.textContent = m.replace(":latest", "");
+                modelSelect.appendChild(opt);
+            });
+            // highlight first
+            if (modelsList.firstChild) modelsList.firstChild.classList.add("active");
         }
-
-        // 2. Handle local model response (Object)
-        if (data.offline_warning) {
-            appendMessage('system-notice',
-                '⚠️ <strong>Offline model:</strong> Knowledge cutoff applies. This local model cannot access real-time information.'
-            );
-        }
-
-        const meta = `${data.tokens_per_sec} TPS · ${data.response_time}s · ${model}`;
-        // Strip backend warning if exists (since we show system-notice above)
-        const cleanResponse = data.offline_warning
-            ? data.response.replace(/^⚠️.*?real-world events\.\n\n/s, '').replace(/^⚠️.*?applies\.\n\n/s, '')
-            : data.response;
-
-        appendMessage('ai', cleanResponse, meta);
-
-    } catch (err) {
-        appendMessage('ai', "Sorry, I couldn't connect. Is the backend running?");
-    } finally {
-        showLoader(false);
-    }
-};
-
-// ── Single-model Benchmark ────────────────────────────────────────────────────
-document.getElementById('benchmark-btn').onclick = async () => {
-    const input  = document.getElementById('prompt-input');
-    const prompt = input.value.trim();
-    const model  = document.getElementById('model-select').value;
-
-    if (!prompt) {
-        alert("Please enter a prompt or pick a Quick Test above.");
-        return;
-    }
-
-    input.value = '';
-    input.style.height = 'auto';
-
-    showResultArea('generating', model);
-    showLoader(true);
-
-    try {
-        const res  = await fetch(`${API_BASE_URL}/benchmark`, {
-            method:  'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body:    JSON.stringify({ model, prompt })
-        });
-        const data = await res.json();
-
-        if (data.detail) throw new Error(data.detail);
-
-        renderSingleResult(data, prompt);
-        addToHistory({ type: 'benchmark', model: data.model, latency: data.latency, tps: data.tokens_per_sec, ts: Date.now() });
-
-    } catch (err) {
-        showResultArea('error', model, err.message);
-    } finally {
-        showLoader(false);
-    }
-};
-
-// ── Compare All Models ────────────────────────────────────────────────────────
-document.getElementById('compare-btn').onclick = async () => {
-    const input  = document.getElementById('prompt-input');
-    const prompt = input.value.trim();
-
-    if (!prompt) {
-        alert("Please enter a prompt or pick a Quick Test above.");
-        return;
-    }
-
-    if (models.length === 0) {
-        alert("No models found. Install at least one model via Ollama.");
-        return;
-    }
-
-    input.value = '';
-    input.style.height = 'auto';
-
-    showResultArea('comparing');
-    showLoader(true);
-
-    try {
-        const res  = await fetch(`${API_BASE_URL}/compare`, {
-            method:  'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body:    JSON.stringify({ models, prompt })
-        });
-        const data = await res.json();
-
-        if (data.detail) throw new Error(data.detail);
-
-        renderComparisonResult(data, prompt);
-        addToHistory({ type: 'compare', winner: data.winner, count: data.results.length, ts: Date.now() });
-
-    } catch (err) {
-        showResultArea('error', null, err.message);
-    } finally {
-        showLoader(false);
-    }
-};
-
-// ── Dataset Benchmark ─────────────────────────────────────────────────────────
-document.getElementById('dataset-btn').onclick = async () => {
-    if (models.length === 0) {
-        alert("No models found. Install at least one model via Ollama.");
-        return;
-    }
-
-    showResultArea('dataset');
-    showLoader(true);
-
-    try {
-        const res  = await fetch(`${API_BASE_URL}/dataset-benchmark`, {
-            method:  'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body:    JSON.stringify({ models })
-        });
-        const data = await res.json();
-        if (data.detail) throw new Error(data.detail);
-
-        renderDatasetResult(data);
-        addToHistory({
-            type:   'dataset',
-            winner: data.winner,
-            count:  data.results.length,
-            prompts: data.prompt_count,
-            ts:     Date.now()
-        });
-
-    } catch (err) {
-        showResultArea('error', null, err.message);
-    } finally {
-        showLoader(false);
-    }
-};
-
-function renderDatasetResult(data) {
-    const area    = document.getElementById('result-area');
-    const results = data.results;
-    const winner  = data.winner;
-    const nPrompts = data.prompt_count || 8;
-
-    // Leaderboard rows
-    const rows = results.map((r, i) => {
-        const isWinner = i === 0;
-        const accClass = r.accuracy_pct >= 90 ? 'acc-perfect' : r.accuracy_pct >= 60 ? 'acc-good' : 'acc-poor';
-        const tpsBar   = Math.min(100, ((r.avg_tps || 0) / 80) * 100);
-        return `
-        <tr class="${isWinner ? 'winner-row' : ''}">
-            <td>
-                ${isWinner ? '<span class="trophy">🏆</span>' : `<span class="rank">#${i + 1}</span>`}
-                <strong>${r.model.toUpperCase()}</strong>
-            </td>
-            <td style="color:var(--accent-primary);font-weight:800;font-size:1rem;">${r.score}</td>
-            <td><span class="accuracy-badge ${accClass}">${r.accuracy_pct}%</span></td>
-            <td>
-                <div class="comparison-tps-wrap">
-                    <span class="td-tps">${r.avg_tps}</span>
-                    <div class="tps-bar-track"><div class="tps-bar-fill" style="width:${tpsBar}%"></div></div>
-                </div>
-            </td>
-            <td class="td-latency">${r.avg_latency}s</td>
-        </tr>`;
-    }).join('');
-
-    // Per-task breakdown for the winner
-    const winnerData = results[0];
-    let taskRows = '';
-    if (winnerData && winnerData.tasks) {
-        taskRows = winnerData.tasks.map(t => {
-            const icon = t.correct ? '✅' : (t.error ? '⚠️' : '❌');
-            const typeColor = {
-                reasoning: '#a78bfa', math: '#34d399', memory: '#fb923c',
-                coding: '#38bdf8', factual: '#f472b6'
-            }[t.type] || '#94a3b8';
-            return `<tr>
-                <td style="color:${typeColor};font-size:0.7rem;font-weight:700;text-transform:uppercase;">${t.type}</td>
-                <td style="font-size:0.75rem;color:var(--text-mid);max-width:260px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(t.prompt || '')}</td>
-                <td style="text-align:center;font-size:1rem;">${icon}</td>
-                <td style="color:#94a3b8;font-size:0.72rem;font-family:var(--font-mono);">${t.tps || '—'} t/s</td>
-            </tr>`;
-        }).join('');
-    }
-
-    area.innerHTML = `
-    <div class="dataset-card">
-        <div class="result-card-header">
-            <span class="result-model-name">📊 Dataset Benchmark</span>
-            <span class="result-badge winner-badge">🏆 Winner: ${winner ? winner.toUpperCase() : '—'}</span>
-        </div>
-        <div class="suite-meta">
-            ${nPrompts} standardized prompts · ${results.length} model${results.length !== 1 ? 's' : ''} · Reasoning · Math · Memory · Coding · Factual
-        </div>
-
-        <table class="comparison-table suite-leaderboard">
-            <thead>
-                <tr>
-                    <th>Model</th>
-                    <th>Score ↓</th>
-                    <th>Accuracy</th>
-                    <th>Avg TPS</th>
-                    <th>Avg Latency</th>
-                </tr>
-            </thead>
-            <tbody>${rows}</tbody>
-        </table>
-        <div class="comparison-note">
-            Score = (Accuracy% × 2) + (TPS × 1.5) − Latency · Weighted by prompt difficulty
-        </div>
-
-        ${winnerData && taskRows ? `
-        <details class="result-response-toggle" style="margin-top:1.2rem;">
-            <summary style="font-size:0.78rem;color:var(--text-low);">
-                🏆 ${winner ? winner.toUpperCase() : ''} — Per-Prompt Results
-            </summary>
-            <div style="margin-top:0.8rem;overflow-x:auto;">
-                <table class="comparison-table" style="font-size:0.8rem;">
-                    <thead><tr>
-                        <th>Type</th><th>Prompt</th><th>Pass</th><th>Speed</th>
-                    </tr></thead>
-                    <tbody>${taskRows}</tbody>
-                </table>
-            </div>
-        </details>` : ''}
-
-        <div class="suite-actions">
-            <button class="export-btn" onclick="exportDatasetCSV(window._lastDatasetData)">
-                ⬇ Export CSV
-            </button>
-        </div>
-
-        <div class="chart-section">
-            <h4 class="chart-title">📊 Accuracy vs Speed Comparison</h4>
-            <div class="chart-viewport" style="height:220px;">
-                <canvas id="datasetChart"></canvas>
-            </div>
-        </div>
-    </div>`;
-
-    // Animate TPS bars
-    setTimeout(() => {
-        document.querySelectorAll('.tps-bar-fill').forEach(el => {
-            el.style.transition = 'width 0.7s ease';
-        });
-    }, 50);
-
-    window._lastDatasetData = results;
-    renderDatasetChart(results);
+    } catch (e) { console.warn("Failed to load models", e); }
 }
 
-function renderDatasetChart(results) {
-    const ctx = document.getElementById('datasetChart');
-    if (!ctx) return;
-    if (window._datasetChartInst) window._datasetChartInst.destroy();
+async function fetchSystemInfo() {
+    try {
+        const sysRes  = await fetch(`${API_BASE_URL}/system-info`);
+        const sysData = await sysRes.json();
+        const cpuEl = document.getElementById("sys-cpu");
+        const ramEl = document.getElementById("sys-ram");
+        const osEl  = document.getElementById("sys-os");
+        if (cpuEl) cpuEl.textContent = sysData.cpu      || sysData.cpu_model  || "N/A";
+        if (ramEl) ramEl.textContent = sysData.ram      || sysData.total_ram  || "N/A";
+        if (osEl)  osEl.textContent  = sysData.os       || sysData.platform   || "N/A";
+    } catch (e) {
+        ["sys-cpu","sys-ram","sys-os"].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = "Unavailable";
+        });
+    }
+}
 
-    const labels   = results.map(r => r.model.toUpperCase());
-    const accArr   = results.map(r => r.accuracy_pct || 0);
-    const tpsArr   = results.map(r => r.avg_tps || 0);
-    const latArr   = results.map(r => r.avg_latency || 0);
+// ════════════════════════════════════════════════════════════════════════════
+// HELPERS
+// ════════════════════════════════════════════════════════════════════════════
 
-    window._datasetChartInst = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels,
-            datasets: [
-                {
-                    label: 'Accuracy %',
-                    data: accArr,
-                    backgroundColor: 'rgba(74,222,128,0.75)',
-                    borderRadius: 6, borderSkipped: false,
-                    yAxisID: 'yAcc'
-                },
-                {
-                    label: 'Avg TPS',
-                    data: tpsArr,
-                    backgroundColor: 'rgba(6,182,212,0.75)',
-                    borderRadius: 6, borderSkipped: false,
-                    yAxisID: 'y'
-                },
-                {
-                    label: 'Avg Latency (s)',
-                    data: latArr,
-                    backgroundColor: 'rgba(244,63,94,0.7)',
-                    borderRadius: 6, borderSkipped: false,
-                    yAxisID: 'y'
+// Lock / unlock all buttons while a request is in flight
+function setButtonsBusy(busy) {
+    [askBtn, benchmarkBtn, compareBtn, suiteBtn, datasetBtn].forEach(b => {
+        b.disabled    = busy;
+        b.style.opacity = busy ? "0.5" : "";
+        b.style.cursor  = busy ? "wait" : "";
+    });
+    document.querySelectorAll(".quick-test-btn").forEach(b => {
+        b.disabled    = busy;
+        b.style.opacity = busy ? "0.5" : "";
+    });
+}
+
+// Render a non-streaming result card
+function createResultCard(data, isBenchmark = false) {
+    const card = document.createElement("div");
+    card.className = "result-card";
+    
+    if (data.error) {
+        card.innerHTML = `
+            <div class="rc-header">
+                <div class="rc-header-left">
+                    <span class="rc-model-pill">${data.model}</span>
+                    <span class="rc-prompt-txt">Error</span>
+                </div>
+            </div>
+            <div class="rc-body"><span class="error">${data.error}</span></div>`;
+    } else {
+        card.innerHTML = `
+            <div class="rc-header">
+                <div class="rc-header-left">
+                    <span class="rc-model-pill">${data.model}</span>
+                    <span class="rc-prompt-txt">${data.prompt ? "Prompt: " + data.prompt : (data.score ? `Score: ${data.score}` : "")}</span>
+                </div>
+            </div>
+            ${data.response ? `<div class="rc-body">${data.response}</div>` : ""}
+            <div class="rc-footer">
+                ${(data.response_time || data.latency || data.avg_latency) ? `<div class="rc-stat"><div class="rc-stat-val green">${Number(data.response_time || data.latency || data.avg_latency).toFixed(2)}s</div><div class="rc-stat-label">TOTAL</div></div>` : ""}
+                ${(data.avg_tps || data.tokens_per_sec) ? `<div class="rc-stat"><div class="rc-stat-val purple">${(data.avg_tps || data.tokens_per_sec).toFixed(1)}</div><div class="rc-stat-label">TOK/S</div></div>` : ""}
+                ${(data.response_length || data.tokens) ? `<div class="rc-stat"><div class="rc-stat-val orange">${data.response_length || data.tokens}</div><div class="rc-stat-label">TOKENS</div></div>` : ""}
+                ${data.accuracy_pct !== undefined ? `<div class="rc-stat"><div class="rc-stat-val blue">${data.accuracy_pct}%</div><div class="rc-stat-label">ACCURACY</div></div>` : ""}
+                ${data.cpu ? `<div class="rc-stat"><div class="rc-stat-val red" style="color: #f87171;">${data.cpu}%</div><div class="rc-stat-label">CPU</div></div>` : ""}
+                ${data.ram ? `<div class="rc-stat"><div class="rc-stat-val yellow" style="color: #eab308;">${data.ram}%</div><div class="rc-stat-label">RAM</div></div>` : ""}
+            </div>`;
+    }
+    return card;
+}
+
+// Handle a streaming /ask or /benchmark response
+async function handleStreamingResponse(response, container, modelName, isBenchmark = false, prompt = "") {
+    const reader  = response.body.getReader();
+    const decoder = new TextDecoder("utf-8");
+
+    const card = document.createElement("div");
+    card.className = "result-card";
+    const now = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'});
+    card.innerHTML = `
+        <div class="rc-header">
+            <div class="rc-header-left">
+                <span class="rc-model-pill">${modelName}</span>
+                <span class="rc-prompt-txt">Chat "${prompt}"</span>
+            </div>
+            <div class="rc-header-right">
+                <span class="rc-time">${now}</span>
+                <button class="rc-copy-btn">Copy</button>
+            </div>
+        </div>
+        <div class="rc-body streaming"></div>
+        <div class="rc-footer" style="display:none;"></div>
+    `;
+    container.appendChild(card);
+
+    const textDiv = card.querySelector(".rc-body");
+    const metaDiv = card.querySelector(".rc-footer");
+    let fullText  = "";
+
+    while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        const lines = decoder.decode(value, { stream: true }).split("\n");
+        for (const line of lines) {
+            if (!line.startsWith("data: ")) continue;
+            try {
+                const data = JSON.parse(line.substring(6));
+                if (data.type === "error") {
+                    textDiv.innerHTML = `<span class="error">Error: ${data.error}</span>`;
+                    return;
+                } else if (data.type === "chunk") {
+                    fullText += data.text;
+                    textDiv.textContent = fullText;
+                } else if (data.type === "final") {
+                    textDiv.classList.remove("streaming");
+                    metaDiv.style.display = "flex";
+                    metaDiv.innerHTML = `
+                        <div class="rc-stat"><div class="rc-stat-val green">${data.response_time || data.latency || "0.0"}s</div><div class="rc-stat-label">TOTAL</div></div>
+                        ${data.tokens_per_sec ? `<div class="rc-stat"><div class="rc-stat-val purple">${data.tokens_per_sec}</div><div class="rc-stat-label">TOK/S</div></div>` : ""}
+                        <div class="rc-stat"><div class="rc-stat-val orange">${data.response_length || data.token_count || 0}</div><div class="rc-stat-label">TOKENS</div></div>
+                        <div class="rc-stat"><div class="rc-stat-val blue">${fullText.split(/\s+/).length}</div><div class="rc-stat-label">WORDS</div></div>
+                    `;
+                    return { tps: data.tokens_per_sec || 0, time: data.response_time || data.latency || 0 };
                 }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                y: {
-                    beginAtZero: true, position: 'left',
-                    grid: { color: 'rgba(255,255,255,0.05)' },
-                    ticks: { color: '#94a3b8' },
-                    title: { display: true, text: 'TPS / Latency', color: '#64748b', font: { size: 10 } }
-                },
-                yAcc: {
-                    beginAtZero: true, max: 100, position: 'right',
-                    grid: { drawOnChartArea: false },
-                    ticks: { color: '#94a3b8', callback: v => v + '%' },
-                    title: { display: true, text: 'Accuracy %', color: '#64748b', font: { size: 10 } }
-                },
-                x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
-            },
-            plugins: {
-                legend: { labels: { color: '#94a3b8', font: { size: 11 }, boxWidth: 12 } },
-                tooltip: { mode: 'index', intersect: false }
-            },
-            animation: { duration: 900, easing: 'easeOutQuart' }
+            } catch (_) {}
         }
-    });
+    }
 }
 
-function exportDatasetCSV(data) {
-    if (!data || data.length === 0) {
-        alert("No dataset results to export. Run the dataset benchmark first.");
-        return;
-    }
-    let csv = "Rank,Model,Score,Accuracy (%),Avg TPS,Avg Latency (s),Prompts Passed\n";
-    data.forEach((r, i) => {
-        const passed = (r.tasks || []).filter(t => t.correct).length;
-        const total  = (r.tasks || []).length;
-        csv += `${i + 1},${r.model},${r.score},${r.accuracy_pct},${r.avg_tps},${r.avg_latency},${passed}/${total}\n`;
+// ════════════════════════════════════════════════════════════════════════════
+// QUICK TEST BUTTONS
+// ════════════════════════════════════════════════════════════════════════════
+// ────────────────────────────────────────────────────────────────────────────
+// QUICK CARD BUTTONS (new UI)
+// ────────────────────────────────────────────────────────────────────────────
+document.querySelectorAll(".qt-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+        const prompt = btn.dataset.prompt;
+        const action = btn.dataset.action || "ask";
+        if (!prompt) return;
+        document.querySelectorAll(".qt-btn").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        promptInput.value = prompt;
+        if      (action === "benchmark") benchmarkBtn.click();
+        else if (action === "compare")   compareBtn.click();
+        else                             askBtn.click();
     });
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement('a');
-    a.href = url;
-    a.download = `dataset_benchmark_${new Date().toISOString().slice(0,10)}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+// KEYBOARD: Enter submits ask
+// ════════════════════════════════════════════════════════════════════════════
+promptInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); askBtn.click(); }
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+// REVIEW button → open Swagger docs
+// ════════════════════════════════════════════════════════════════════════════
+const reviewBtn = document.getElementById("review-btn");
+if (reviewBtn) {
+    reviewBtn.addEventListener("click", () => window.open(`${API_BASE_URL}/docs`, "_blank"));
 }
 
-// ── Run Suite (Multi-Prompt Benchmark) ────────────────────────────────────────
-document.getElementById('suite-btn').onclick = async () => {
-    if (models.length === 0) {
-        alert("No models found. Install at least one model via Ollama.");
-        return;
-    }
+// ════════════════════════════════════════════════════════════════════════════
+// ACTION HANDLERS
+// ════════════════════════════════════════════════════════════════════════════
 
-    showResultArea('suite');
-    showLoader(true);
+// ── Ask (chat) ──────────────────────────────────────────────────────────────
+// Helper: switch to results view
+function showResultsSection() {
+    const hero    = document.getElementById("hero-section");
+    const results = document.getElementById("results-section");
+    if (hero)    hero.style.display    = "none";
+    if (results) results.classList.add("visible");
+}
 
+askBtn.onclick = async () => {
+    const prompt = promptInput.value.trim();
+    const model  = modelSelect.value;
+    if (!prompt) { promptInput.focus(); return; }
+    promptInput.value = ""; // Clear input immediately
+    showResultsSection();
+    setButtonsBusy(true);
+    resultsContainer.innerHTML = `<p class="placeholder"><i class="fa-solid fa-circle-notch fa-spin"></i>&nbsp; Generating response&hellip;</p>`;
     try {
-        const res  = await fetch(`${API_BASE_URL}/benchmark-suite`, {
-            method:  'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body:    JSON.stringify({ models })
-        });
-        const data = await res.json();
-
-        if (data.detail) throw new Error(data.detail);
-
-        renderSuiteResult(data);
-        addToHistory({
-            type:   'suite',
-            winner: data.winner,
-            count:  data.results.length,
-            ts:     Date.now()
-        });
-
+        const res = await fetch(`${API_BASE_URL}/ask?prompt=${encodeURIComponent(prompt)}&model=${encodeURIComponent(model)}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        resultsContainer.innerHTML = "";
+        const stats = await handleStreamingResponse(res, resultsContainer, model, false, prompt);
+        saveToHistory("Ask", prompt, model, stats);
     } catch (err) {
-        showResultArea('error', null, err.message);
-    } finally {
-        showLoader(false);
-    }
+        resultsContainer.innerHTML = `<p class="error">Backend error: ${err.message}</p>`;
+    } finally { setButtonsBusy(false); }
 };
 
-// ── Suite Result Rendering ────────────────────────────────────────────────────
-function renderSuiteResult(data) {
-    const area    = document.getElementById('result-area');
-    const results = data.results;
-    const winner  = data.winner;
-    const prompts = data.prompt_count || 4;
+// ── Benchmark ──────────────────────────────────────────────────────────────
+benchmarkBtn.onclick = async () => {
+    const prompt = promptInput.value.trim();
+    const model  = modelSelect.value;
+    if (!prompt) { promptInput.focus(); return; }
+    promptInput.value = ""; // Clear input immediately
+    showResultsSection();
+    setButtonsBusy(true);
+    resultsContainer.innerHTML = `<p class="placeholder"><i class="fa-solid fa-circle-notch fa-spin"></i>&nbsp; Running benchmark on ${model}&hellip;</p>`;
+    try {
+        const res = await fetch(`${API_BASE_URL}/benchmark`, {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ model, prompt })
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        resultsContainer.innerHTML = "";
+        data.prompt = prompt;
+        resultsContainer.appendChild(createResultCard(data, true));
+        saveToHistory("Benchmark", prompt, model, { tps: 0, time: data.latency || 0 });
+    } catch (err) {
+        resultsContainer.innerHTML = `<p class="error">Backend error: ${err.message}</p>`;
+    } finally { setButtonsBusy(false); }
+};
 
-    const rows = results.map((r, i) => {
-        const isWinner   = i === 0;
-        const accPct     = Math.round((r.accuracy || 0) * 100);
-        const accClass   = accPct === 100 ? 'acc-perfect' : accPct >= 75 ? 'acc-good' : 'acc-poor';
-        const tpsBar     = Math.min(100, ((r.avg_tps || 0) / 80) * 100);
-        return `
-        <tr class="${isWinner ? 'winner-row' : ''}">
-            <td>
-                ${isWinner ? '<span class="trophy">🏆</span>' : `<span class="rank">#${i + 1}</span>`}
-                <strong>${r.model.toUpperCase()}</strong>
-            </td>
-            <td style="color:var(--accent-primary);font-weight:800;font-size:1rem;">${r.score}</td>
-            <td>
-                <div class="comparison-tps-wrap">
-                    <span class="td-tps">${r.avg_tps}</span>
-                    <div class="tps-bar-track"><div class="tps-bar-fill" style="width:${tpsBar}%"></div></div>
-                </div>
-            </td>
-            <td class="td-latency">${r.avg_latency}s</td>
-            <td><span class="accuracy-badge ${accClass}">${accPct}%</span></td>
-        </tr>`;
-    }).join('');
+// ── Compare All ────────────────────────────────────────────────────────────
+compareBtn.onclick = async () => {
+    const prompt = promptInput.value.trim();
+    if (!prompt) { promptInput.focus(); return; }
+    promptInput.value = ""; // Clear input immediately
+    showResultsSection();
+    setButtonsBusy(true);
+    resultsContainer.innerHTML = `<p class="placeholder"><i class="fa-solid fa-circle-notch fa-spin"></i>&nbsp; Comparing all models&hellip; May take a few minutes.</p>`;
+    try {
+        const res = await fetch(`${API_BASE_URL}/compare`, {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ prompt, models: [] })
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        resultsContainer.innerHTML = "";
+        
+        data.results.forEach(r => {
+            r.prompt = prompt;
+            if (r.model === data.winner) r.score = "Fastest \uD83C\uDFC6";
+            resultsContainer.appendChild(createResultCard(r, true));
+        });
+        saveToHistory("Compare", prompt, "All Models", { time: data.results.length ? data.results[0].latency : 0 });
+    } catch (err) {
+        resultsContainer.innerHTML = `<p class="error">Backend error: ${err.message}</p>`;
+    } finally { setButtonsBusy(false); }
+};
 
-    // Task breakdown detail
-    const hasTasks = results[0] && results[0].tasks && results[0].tasks.length > 0;
-    let taskBreakdown = '';
-    if (hasTasks) {
-        taskBreakdown = `
-        <details class="result-response-toggle" style="margin-top:1rem;">
-            <summary style="font-size:0.78rem;color:var(--text-low);">Per-Task Breakdown</summary>
-            <div class="task-grid" style="margin-top:0.8rem;">
-                ${buildTaskGrid(results)}
-            </div>
-        </details>`;
+// ── Run Suite ──────────────────────────────────────────────────────────────
+suiteBtn.onclick = async () => {
+    showResultsSection();
+    setButtonsBusy(true);
+    resultsContainer.innerHTML = `<p class="placeholder"><i class="fa-solid fa-circle-notch fa-spin"></i>&nbsp; Running evaluation suite&hellip; Grab a coffee!</p>`;
+    try {
+        const res = await fetch(`${API_BASE_URL}/evaluate`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        
+        let winner = "None";
+        let bestScore = -1;
+        data.forEach(r => {
+            if (r.score > bestScore) { bestScore = r.score; winner = r.model; }
+        });
+
+        resultsContainer.innerHTML = `<div class="result-card"><div class="rc-header"><span class="rc-model-pill" style="background:#10b981;color:#fff;">👑 Winner: ${winner}</span></div><div class="rc-body">Multi-task Evaluation Suite Complete.</div></div>`;
+        data.forEach(r => {
+            // Map avg_* metrics to the standard keys createResultCard expects
+            r.cpu = r.avg_cpu;
+            r.ram = r.avg_ram;
+            r.tokens = r.total_tokens;
+            
+            // Generate a summary response string from the tasks
+            if (r.tasks && r.tasks.length) {
+                r.response = r.tasks.map(t => `<b>${t.task_name}</b>: ${t.response.substring(0, 50)}...`).join("<br>");
+            }
+            resultsContainer.appendChild(createResultCard(r, true));
+        });
+        saveToHistory("Suite", "Eval Suite", "All Models", {});
+    } catch (err) {
+        resultsContainer.innerHTML = `<p class="error">Backend error: ${err.message}</p>`;
+    } finally { setButtonsBusy(false); }
+};
+
+// ── Dataset Benchmark ──────────────────────────────────────────────────────
+datasetBtn.onclick = async () => {
+    showResultsSection();
+    setButtonsBusy(true);
+    resultsContainer.innerHTML = `<p class="placeholder"><i class="fa-solid fa-circle-notch fa-spin"></i>&nbsp; Running dataset benchmark&hellip;</p>`;
+    try {
+        // Fallback since backend doesn't have a dataset-benchmark endpoint
+        const datasetPrompt = "Classify this sentiment: 'I absolutely loved this product, it works perfectly!' Options: Positive, Negative, Neutral.";
+        const res = await fetch(`${API_BASE_URL}/compare`, {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ prompt: datasetPrompt, models: [] })
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        resultsContainer.innerHTML = `<h3 style="margin-bottom: 1rem; color: var(--text-muted); text-align: center;">Dataset Evaluation Complete</h3>`;
+        data.results.forEach(r => {
+            r.prompt = datasetPrompt;
+            resultsContainer.appendChild(createResultCard(r, true));
+        });
+        saveToHistory("Dataset", "Dataset Benchmark", "All Models", {});
+    } catch (err) {
+        resultsContainer.innerHTML = `<p class="error">Backend error: ${err.message}</p>`;
+    } finally { setButtonsBusy(false); }
+};
+
+// ════════════════════════════════════════════════════════════════════════════
+// MICROPHONE BUTTON (Web Speech API – type-to-speak)
+// ════════════════════════════════════════════════════════════════════════════
+const micBtn = document.getElementById("mic-btn");
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+if (!SpeechRecognition) {
+    if (micBtn) {
+        micBtn.title  = "Speech recognition not supported. Try Chrome or Edge.";
+        micBtn.style.opacity = "0.4";
+        micBtn.style.cursor  = "not-allowed";
+    }
+} else {
+    const recognition        = new SpeechRecognition();
+    recognition.lang         = "en-US";
+    recognition.continuous   = false;
+    recognition.interimResults = true;
+
+    let isListening = false;
+    let savedPrompt = "";
+
+    function startListening() {
+        isListening = true;
+        savedPrompt = promptInput.value;
+        micBtn.classList.add("mic-active");
+        micBtn.title = "Listening\u2026 click to stop";
+        recognition.start();
+    }
+    function stopListening() {
+        isListening = false;
+        micBtn.classList.remove("mic-active");
+        micBtn.title = "Click to speak";
+        recognition.stop();
     }
 
-    area.innerHTML = `
-    <div class="suite-card">
-        <div class="result-card-header">
-            <span class="result-model-name">🏆 Benchmark Suite</span>
-            <span class="result-badge winner-badge">Winner: ${winner ? winner.toUpperCase() : '—'}</span>
-        </div>
-        <div class="suite-meta">
-            ${prompts} prompts × ${results.length} model${results.length !== 1 ? 's' : ''} · Speed + Reasoning + Coding + Memory
-        </div>
+    micBtn.addEventListener("click", () => isListening ? stopListening() : startListening());
 
-        <table class="comparison-table suite-leaderboard">
-            <thead>
-                <tr>
-                    <th>Model</th>
-                    <th>Score ↓</th>
-                    <th>Avg TPS</th>
-                    <th>Avg Latency</th>
-                    <th>Accuracy</th>
-                </tr>
-            </thead>
-            <tbody>${rows}</tbody>
-        </table>
+    recognition.addEventListener("result", (event) => {
+        let interim = "", final = "";
+        for (const r of event.results) {
+            if (r.isFinal) final += r[0].transcript;
+            else interim += r[0].transcript;
+        }
+        promptInput.value = (savedPrompt ? savedPrompt + " " : "") + (final || interim);
+    });
 
-        <div class="comparison-note">
-            Score = (Avg TPS × 3) − (Avg Latency × 2) + (Accuracy × 50) · Parallel execution
-        </div>
+    recognition.addEventListener("end", () => {
+        if (isListening) { isListening = false; micBtn.classList.remove("mic-active"); micBtn.title = "Click to speak"; }
+    });
 
-        <div class="suite-actions">
-            <button class="export-btn" onclick="exportCSV(window._lastSuiteData)">
-                ⬇ Export CSV
-            </button>
-        </div>
-
-        <div class="chart-section">
-            <h4 class="chart-title">📊 Dual-Metric Performance Chart</h4>
-            <div class="chart-viewport" style="height:240px;">
-                <canvas id="suiteChart"></canvas>
-            </div>
-        </div>
-    </div>`;
-
-    // Animate bar fills
-    setTimeout(() => {
-        document.querySelectorAll('.tps-bar-fill').forEach(el => {
-            el.style.transition = 'width 0.7s ease';
-        });
-    }, 50);
-
-    // Store for CSV export
-    window._lastSuiteData = results;
-
-    // Render dual chart
-    renderSuiteChart(results);
+    recognition.addEventListener("error", (event) => {
+        stopListening();
+        const msgs = { "not-allowed": "Microphone access denied.", "no-speech": "No speech detected. Try again.", "aborted": "" };
+        const msg  = msgs[event.error] || ("Speech error: " + event.error);
+        if (!msg) return;
+        const toast = document.createElement("div");
+        toast.textContent = "\uD83C\uDF99\uFE0F " + msg;
+        toast.style.cssText = "position:fixed;bottom:5rem;left:50%;transform:translateX(-50%);background:#1a1d27;color:#f87171;border:1px solid #7f1d1d;padding:.75rem 1.5rem;border-radius:8px;font-size:.85rem;z-index:9999";
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 4000);
+    });
 }
 
-function buildTaskGrid(results) {
-    const types = ['Speed', 'Reasoning', 'Coding', 'Memory'];
-    return types.map(type => {
-        const modelCells = results.map(r => {
-            const task = (r.tasks || []).find(t => t.type === type);
-            if (!task) return `<td style="color:var(--text-low);">—</td>`;
-            const acc = task.accuracy === 1 ? '✅' : '❌';
-            return `<td style="font-size:0.75rem;">${acc} ${task.tps || 0} t/s · ${task.latency || 0}s</td>`;
-        }).join('');
-        return `<tr>
-            <td style="font-size:0.72rem;color:var(--accent-cyan);font-weight:700;width:90px;">${type}</td>
-            ${modelCells}
-        </tr>`;
-    }).join('');
-}
+// ════════════════════════════════════════════════════════════════════════════
+// VOICE CHAT ENGINE
+// Flow: orb tap → STT → /ask stream → TTS → back to idle
+// ════════════════════════════════════════════════════════════════════════════
+(function () {
+    const overlay    = document.getElementById("voice-chat-overlay");
+    const launchBtn  = document.getElementById("voice-chat-btn");
+    const closeBtn   = document.getElementById("vc-close-btn");
+    const orbEl      = document.getElementById("vc-orb");
+    const orbIcon    = document.getElementById("vc-orb-icon");
+    const statusEl   = document.getElementById("vc-status");
+    const transcript = document.getElementById("vc-transcript");
+    const mainBtn    = document.getElementById("vc-main-btn");
+    const muteBtn    = document.getElementById("vc-mute-btn");
+    const stopBtn    = document.getElementById("vc-stop-btn");
+    const vcModel    = document.getElementById("vc-model-select");
 
-function renderSuiteChart(results) {
-    const ctx = document.getElementById('suiteChart');
-    if (!ctx) return;
+    let vcState = "idle";
+    let isMuted = false;
+    let vcRecognition = null;
 
-    if (window._suiteChartInst) window._suiteChartInst.destroy();
+    function setState(s) {
+        vcState = s;
+        overlay.classList.remove("vc-listening","vc-thinking","vc-speaking");
+        if (s === "listening") {
+            overlay.classList.add("vc-listening");
+            orbIcon.className = "fa-solid fa-microphone";
+            mainBtn.innerHTML = '<i class="fa-solid fa-stop"></i><span>Stop</span>';
+            mainBtn.classList.add("listening");
+            statusEl.textContent = "Listening\u2026";
+        } else if (s === "thinking") {
+            overlay.classList.add("vc-thinking");
+            orbIcon.className = "fa-solid fa-circle-notch fa-spin";
+            mainBtn.innerHTML = '<i class="fa-solid fa-microphone"></i><span>Tap to Speak</span>';
+            mainBtn.classList.remove("listening");
+            statusEl.textContent = "Thinking\u2026";
+        } else if (s === "speaking") {
+            overlay.classList.add("vc-speaking");
+            orbIcon.className = "fa-solid fa-volume-high";
+            mainBtn.innerHTML = '<i class="fa-solid fa-microphone"></i><span>Tap to Speak</span>';
+            mainBtn.classList.remove("listening");
+            statusEl.textContent = "Speaking\u2026";
+        } else {
+            orbIcon.className = "fa-solid fa-microphone";
+            mainBtn.innerHTML = '<i class="fa-solid fa-microphone"></i><span>Tap to Speak</span>';
+            mainBtn.classList.remove("listening");
+            statusEl.textContent = "Tap the orb to start";
+        }
+    }
 
-    const labels  = results.map(r => r.model.toUpperCase());
-    const tpsArr  = results.map(r => r.avg_tps || 0);
-    const latArr  = results.map(r => r.avg_latency || 0);
-    const accArr  = results.map(r => Math.round((r.accuracy || 0) * 100));
+    function addBubble(role, text) {
+        const empty = transcript.querySelector(".vc-transcript-empty");
+        if (empty) empty.remove();
+        const bubble = document.createElement("div");
+        bubble.className = "vc-bubble " + role;
+        bubble.innerHTML = `<div class="bubble-label">${role === "user" ? "You" : "AI"}</div><div class="bubble-text">${text}</div>`;
+        transcript.appendChild(bubble);
+        transcript.scrollTop = transcript.scrollHeight;
+        return bubble;
+    }
+    function updateBubbleText(bubble, text) {
+        bubble.querySelector(".bubble-text").textContent = text;
+        transcript.scrollTop = transcript.scrollHeight;
+    }
 
-    window._suiteChartInst = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels,
-            datasets: [
-                {
-                    label: 'Avg TPS',
-                    data: tpsArr,
-                    backgroundColor: 'rgba(6,182,212,0.80)',
-                    borderRadius: 6, borderSkipped: false,
-                    yAxisID: 'y'
-                },
-                {
-                    label: 'Avg Latency (s)',
-                    data: latArr,
-                    backgroundColor: 'rgba(244,63,94,0.75)',
-                    borderRadius: 6, borderSkipped: false,
-                    yAxisID: 'y'
-                },
-                {
-                    label: 'Accuracy %',
-                    data: accArr,
-                    backgroundColor: 'rgba(74,222,128,0.70)',
-                    borderRadius: 6, borderSkipped: false,
-                    yAxisID: 'y2'
+    function speak(text, onDone) {
+        window.speechSynthesis.cancel();
+        if (isMuted) { onDone && onDone(); return; }
+        const utt   = new SpeechSynthesisUtterance(text);
+        utt.lang    = "en-US";
+        utt.rate    = 1.05;
+        const voices = window.speechSynthesis.getVoices();
+        const pref   = voices.find(v => v.lang.startsWith("en") && (v.name.includes("Natural") || v.name.includes("Google") || v.localService));
+        if (pref) utt.voice = pref;
+        utt.onend   = () => onDone && onDone();
+        utt.onerror = () => onDone && onDone();
+        window.speechSynthesis.speak(utt);
+    }
+
+    async function askModel(userText) {
+        setState("thinking");
+        const model = vcModel.value || document.getElementById("model-select").value;
+        const aiBubble = addBubble("ai", "\u22ef");
+        let fullText = "";
+        try {
+            const res     = await fetch(`${API_BASE_URL}/ask?prompt=${encodeURIComponent(userText)}&model=${encodeURIComponent(model)}`);
+            const reader  = res.body.getReader();
+            const decoder = new TextDecoder("utf-8");
+            while (true) {
+                const { value, done } = await reader.read();
+                if (done) break;
+                const lines = decoder.decode(value, { stream: true }).split("\n");
+                for (const line of lines) {
+                    if (!line.startsWith("data: ")) continue;
+                    try {
+                        const d = JSON.parse(line.substring(6));
+                        if (d.type === "chunk") { fullText += d.text; updateBubbleText(aiBubble, fullText); }
+                        else if (d.type === "error") { fullText = "Error: " + d.error; updateBubbleText(aiBubble, fullText); }
+                    } catch (_) {}
                 }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    position: 'left',
-                    grid: { color: 'rgba(255,255,255,0.05)' },
-                    ticks: { color: '#94a3b8' },
-                    title: { display: true, text: 'TPS / Latency', color: '#64748b', font: { size: 10 } }
-                },
-                y2: {
-                    beginAtZero: true,
-                    max: 100,
-                    position: 'right',
-                    grid: { drawOnChartArea: false },
-                    ticks: { color: '#94a3b8', callback: v => v + '%' },
-                    title: { display: true, text: 'Accuracy %', color: '#64748b', font: { size: 10 } }
-                },
-                x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
-            },
-            plugins: {
-                legend: { labels: { color: '#94a3b8', font: { size: 11 }, boxWidth: 12 } },
-                tooltip: { mode: 'index', intersect: false }
-            },
-            animation: { duration: 900, easing: 'easeOutQuart' }
+            }
+        } catch (err) {
+            fullText = "Could not reach the backend.";
+            updateBubbleText(aiBubble, fullText);
         }
-    });
-}
-
-// ── CSV Export ────────────────────────────────────────────────────────────────
-function exportCSV(data) {
-    if (!data || data.length === 0) {
-        alert("No suite data to export. Run the suite first.");
-        return;
+        setState("speaking");
+        speak(fullText, () => setState("idle"));
     }
 
-    let csv = "Rank,Model,Score,Avg TPS,Avg Latency (s),Accuracy (%)\n";
-    data.forEach((r, i) => {
-        const accPct = Math.round((r.accuracy || 0) * 100);
-        csv += `${i + 1},${r.model},${r.score},${r.avg_tps},${r.avg_latency},${accPct}\n`;
-    });
+    const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
 
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement('a');
-    a.href     = url;
-    a.download = `benchmark_suite_${new Date().toISOString().slice(0,10)}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-}
-
-// ── Old benchmark (full suite via GET /evaluate/custom) ───────────────────────
-// Kept for backwards-compat with the analytics hub
-async function runFullEvaluate(prompt) {
-    const route = (prompt.toLowerCase() === 'all')
-        ? '/evaluate'
-        : `/evaluate/custom?prompt=${encodeURIComponent(prompt)}`;
-
-    const res = await fetch(`${API_BASE_URL}${route}`);
-    currentResults = await res.json();
-
-    appendMessage('ai', `Evaluation complete. Analysing ${currentResults.length} models.`);
-    document.getElementById('analytics-hub').classList.remove('hidden');
-    renderAdvancedUI(currentResults);
-    document.getElementById('analytics-hub').scrollIntoView({ behavior: 'smooth' });
-}
-
-// ── Result Rendering ──────────────────────────────────────────────────────────
-function showResultArea(state, model = '', errMsg = '') {
-    const area = document.getElementById('result-area');
-    area.classList.remove('hidden');
-
-    if (state === 'generating') {
-        area.innerHTML = `
-            <div class="result-generating">
-                <div class="gen-dots"><span></span><span></span><span></span></div>
-                <span>Benchmarking <strong>${model}</strong> — please wait…</span>
-            </div>`;
-    } else if (state === 'comparing') {
-        area.innerHTML = `
-            <div class="result-generating">
-                <div class="gen-dots"><span></span><span></span><span></span></div>
-                <span>Comparing all models — this may take a minute…</span>
-            </div>`;
-    } else if (state === 'suite') {
-        area.innerHTML = `
-            <div class="result-generating">
-                <div class="gen-dots"><span></span><span></span><span></span></div>
-                <span>Running full suite — 4 prompts × ${models.length} model${models.length !== 1 ? 's' : ''} in parallel…</span>
-            </div>`;
-    } else if (state === 'dataset') {
-        area.innerHTML = `
-            <div class="result-generating">
-                <div class="gen-dots"><span></span><span></span><span></span></div>
-                <span>Running dataset benchmark — 8 standardized prompts × ${models.length} model${models.length !== 1 ? 's' : ''} in parallel…</span>
-            </div>`;
-    } else if (state === 'error') {
-        area.innerHTML = `
-            <div class="result-error">
-                ⚠️ Error: ${errMsg || 'Could not connect to backend.'}
-            </div>`;
+    function startVcListening() {
+        if (!SpeechRec) { statusEl.textContent = "Speech recognition not supported. Use Chrome/Edge."; return; }
+        window.speechSynthesis.cancel();
+        vcRecognition = new SpeechRec();
+        vcRecognition.lang = "en-US";
+        vcRecognition.continuous = false;
+        vcRecognition.interimResults = true;
+        let interimBubble = null, finalText = "";
+        vcRecognition.onresult = (e) => {
+            let interim = "";
+            finalText = "";
+            for (const r of e.results) {
+                if (r.isFinal) finalText += r[0].transcript;
+                else interim += r[0].transcript;
+            }
+            const display = finalText || interim;
+            if (!interimBubble) interimBubble = addBubble("user", display);
+            else updateBubbleText(interimBubble, display);
+        };
+        vcRecognition.onend = () => {
+            if (vcState !== "listening") return;
+            if (finalText.trim()) askModel(finalText.trim());
+            else setState("idle");
+        };
+        vcRecognition.onerror = (e) => {
+            if (e.error === "aborted") return;
+            statusEl.textContent = "Mic error: " + e.error;
+            setState("idle");
+        };
+        setState("listening");
+        vcRecognition.start();
     }
 
-    const scroll = document.getElementById('main-scroll-area');
-    scroll.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
-// ── Scoring System ────────────────────────────────────────────────────────────
-function calculateScore(model) {
-    // Higher TPS = better, lower latency = better
-    return Math.round((model.tokens_per_sec * 2) - model.latency);
-}
-
-// ── Streaming Text Effect ─────────────────────────────────────────────────────
-function streamText(text, element) {
-    let i = 0;
-    const speed = 12; // ms per character — feels snappy
-    element.innerHTML = '';
-
-    function type() {
-        if (i < text.length) {
-            // Flush multiple chars per tick for longer texts
-            const chunk = text.slice(i, i + 3);
-            element.innerHTML += escHtml(chunk);
-            i += 3;
-            setTimeout(type, speed);
-        }
+    function stopVcListening() {
+        if (vcRecognition) { vcRecognition.abort(); vcRecognition = null; }
+        setState("idle");
     }
-    type();
-}
 
-function renderSingleResult(data, prompt) {
-    const area = document.getElementById('result-area');
-    const tpsBar = Math.min(100, (data.tokens_per_sec / 80) * 100); // scale to 80 t/s = 100%
-    const score = calculateScore({ tokens_per_sec: data.tokens_per_sec, latency: parseFloat(data.latency) });
-
-    area.innerHTML = `
-        <div class="result-card">
-            <div class="result-card-header">
-                <span class="result-model-name">${data.model.toUpperCase()}</span>
-                <span class="result-badge">Single Benchmark</span>
-            </div>
-            <div class="result-prompt-box">${escHtml(prompt)}</div>
-            <div class="result-metrics">
-                <div class="metric-item">
-                    <div class="metric-label">Latency</div>
-                    <div class="metric-value latency-val">${data.latency}s</div>
-                </div>
-                <div class="metric-item">
-                    <div class="metric-label">Tokens / sec</div>
-                    <div class="metric-value tps-val">${data.tokens_per_sec}</div>
-                    <div class="tps-bar-track"><div class="tps-bar-fill" style="width:${tpsBar}%"></div></div>
-                </div>
-                <div class="metric-item">
-                    <div class="metric-label">Output Tokens</div>
-                    <div class="metric-value">${data.tokens}</div>
-                </div>
-                <div class="metric-item">
-                    <div class="metric-label">CPU</div>
-                    <div class="metric-value">${data.cpu}%</div>
-                </div>
-                <div class="metric-item">
-                    <div class="metric-label">Score</div>
-                    <div class="metric-value" style="color:var(--accent-primary);">${score}</div>
-                </div>
-            </div>
-            <details class="result-response-toggle" open>
-                <summary>Model Response <span style="font-size:0.7rem;color:var(--text-low);">(streaming...)</span></summary>
-                <div class="result-response-body" id="stream-output"></div>
-            </details>
-        </div>`;
-
-    // Kick off streaming
-    const streamEl = document.getElementById('stream-output');
-    if (streamEl && data.response) {
-        streamText(data.response, streamEl);
+    function openVoiceChat() {
+        const mainSel = document.getElementById("model-select");
+        vcModel.innerHTML = mainSel.innerHTML;
+        vcModel.value     = mainSel.value;
+        overlay.classList.add("vc-open");
+        overlay.setAttribute("aria-hidden", "false");
+        setState("idle");
     }
-}
+    function closeVoiceChat() {
+        stopVcListening();
+        window.speechSynthesis.cancel();
+        overlay.classList.remove("vc-open");
+        overlay.setAttribute("aria-hidden", "true");
+        setState("idle");
+    }
 
-function renderComparisonResult(data, prompt) {
-    const area    = document.getElementById('result-area');
-    let results   = data.results;
-    const winner  = data.winner;
+    if (launchBtn) launchBtn.addEventListener("click", openVoiceChat);
+    if (closeBtn) closeBtn.addEventListener("click", closeVoiceChat);
 
-    // ── Scoring ──
-    results.forEach(r => {
-        r.score = calculateScore({ tokens_per_sec: r.tokens_per_sec, latency: parseFloat(r.latency || 0) });
-    });
-    results.sort((a, b) => b.score - a.score);
+    function toggleListen() {
+        if      (vcState === "listening") stopVcListening();
+        else if (vcState === "idle")      startVcListening();
+        else if (vcState === "speaking")  { window.speechSynthesis.cancel(); setState("idle"); }
+    }
+    
+    if (orbEl) orbEl.addEventListener("click", toggleListen);
+    if (mainBtn) mainBtn.addEventListener("click", toggleListen);
 
-    const rows = results.map((r, i) => {
-        const isWinner = i === 0; // top scorer after sort
-        const tpsBar   = Math.min(100, (r.tokens_per_sec / 80) * 100);
-        return `
-            <tr class="${isWinner ? 'winner-row' : ''}">
-                <td>
-                    ${isWinner ? '<span class="trophy">🏆</span>' : `<span class="rank">#${i + 1}</span>`}
-                    <strong>${r.model.toUpperCase()}</strong>
-                </td>
-                <td class="td-latency">${r.latency || '—'}s</td>
-                <td>
-                    <div class="comparison-tps-wrap">
-                        <span class="td-tps">${r.tokens_per_sec}</span>
-                        <div class="tps-bar-track"><div class="tps-bar-fill" style="width:${tpsBar}%"></div></div>
-                    </div>
-                </td>
-                <td class="td-tokens">${r.tokens}</td>
-                <td style="color:var(--accent-primary);font-weight:700;">${r.score}</td>
-            </tr>`;
-    }).join('');
-
-    const topModel = results[0];
-
-    area.innerHTML = `
-        <div class="comparison-card">
-            <div class="result-card-header">
-                <span class="result-model-name">Model Comparison</span>
-                <span class="result-badge winner-badge">🏆 Winner: ${topModel ? topModel.model.toUpperCase() : '—'}</span>
-            </div>
-            <div class="result-prompt-box">${escHtml(prompt)}</div>
-            <table class="comparison-table">
-                <thead>
-                    <tr>
-                        <th>Model</th>
-                        <th>Latency</th>
-                        <th>Tokens / sec</th>
-                        <th>Tokens</th>
-                        <th>Score</th>
-                    </tr>
-                </thead>
-                <tbody>${rows}</tbody>
-            </table>
-            <div class="comparison-note">Ranked by Score (TPS×2 − Latency) · ${results.length} model${results.length !== 1 ? 's' : ''} tested</div>
-            <div class="chart-section">
-                <h4 class="chart-title">📊 Performance Chart</h4>
-                <div class="chart-viewport" style="height:220px;">
-                    <canvas id="compareChart"></canvas>
-                </div>
-            </div>
-        </div>`;
-
-    // Animate bar fills
-    setTimeout(() => {
-        document.querySelectorAll('.tps-bar-fill').forEach(el => {
-            el.style.transition = 'width 0.7s ease';
+    if (stopBtn) {
+        stopBtn.addEventListener("click", () => {
+            window.speechSynthesis.cancel();
+            if (vcState === "speaking") setState("idle");
         });
-    }, 50);
+    }
 
-    // ── Render Chart ──
-    renderComparisonChart(results);
-}
+    if (muteBtn) {
+        muteBtn.addEventListener("click", () => {
+            isMuted = !isMuted;
+            muteBtn.classList.toggle("active", isMuted);
+            muteBtn.title = isMuted ? "Unmute TTS" : "Mute TTS";
+            muteBtn.querySelector("i").className = isMuted ? "fa-solid fa-volume-xmark" : "fa-solid fa-volume-high";
+            if (isMuted) window.speechSynthesis.cancel();
+        });
+    }
 
-function renderComparisonChart(results) {
-    const ctx = document.getElementById('compareChart');
-    if (!ctx) return;
+    if (overlay) overlay.addEventListener("click", (e) => { if (e.target === overlay) closeVoiceChat(); });
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape" && overlay && overlay.classList.contains("vc-open")) closeVoiceChat(); });
+    window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+})();
 
-    // Destroy previous instance if any
-    if (window._compareChartInst) window._compareChartInst.destroy();
+// ════════════════════════════════════════════════════════════════════════════
+// RUN HISTORY AND DRAWER LOGIC
+// ════════════════════════════════════════════════════════════════════════════
 
-    const labels = results.map(r => r.model.toUpperCase());
-    const scores = results.map(r => r.score);
-    const tpsArr = results.map(r => r.tokens_per_sec);
-    const latArr = results.map(r => parseFloat(r.latency || 0));
+const drawerToggleBtn = document.getElementById("drawer-toggle-btn");
+const modelsDrawer    = document.getElementById("models-drawer");
+const historyListEl   = document.getElementById("history-list");
+let runHistory = JSON.parse(localStorage.getItem("slmRunHistory") || "[]");
 
-    // Gradient colours per bar
-    const barColors = results.map((_, i) =>
-        i === 0 ? '#a855f7' : `rgba(99,102,241,${0.8 - i * 0.1})`
-    );
+const clearHistoryBtn = document.getElementById("clear-history-btn");
 
-    window._compareChartInst = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels,
-            datasets: [
-                { label: 'Score',       data: scores, backgroundColor: barColors, borderRadius: 6, borderSkipped: false },
-                { label: 'TPS',         data: tpsArr,  backgroundColor: 'rgba(6,182,212,0.7)',  borderRadius: 6, borderSkipped: false },
-                { label: 'Latency (s)', data: latArr,  backgroundColor: 'rgba(244,63,94,0.7)',  borderRadius: 6, borderSkipped: false }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } },
-                x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
-            },
-            plugins: {
-                legend: { labels: { color: '#94a3b8', font: { size: 11 } } },
-                tooltip: { mode: 'index', intersect: false }
-            },
-            animation: { duration: 800, easing: 'easeOutQuart' }
-        }
+if (clearHistoryBtn) {
+    clearHistoryBtn.addEventListener("click", () => {
+        runHistory = [];
+        localStorage.setItem("slmRunHistory", JSON.stringify(runHistory));
+        renderHistory();
     });
 }
 
-// ── Persistent History Strip ──────────────────────────────────────────────────
-function addToHistory(entry) {
-    runHistory.unshift(entry);
-    // Keep at most 50 entries in storage
-    if (runHistory.length > 50) runHistory = runHistory.slice(0, 50);
-    localStorage.setItem('slm_history', JSON.stringify(runHistory));
+function saveToHistory(type, prompt, model, stats = null) {
+    const run = { id: Date.now(), type, prompt, model, date: new Date().toLocaleTimeString(), stats };
+    runHistory.unshift(run); // add to top
+    if (runHistory.length > 50) runHistory.pop();
+    localStorage.setItem("slmRunHistory", JSON.stringify(runHistory));
     renderHistory();
+}
+
+function updateSessionStats() {
+    const runsEl = document.getElementById("stat-runs");
+    const avgEl  = document.getElementById("stat-avg");
+    const bestEl = document.getElementById("stat-best");
+    
+    if (!runsEl || !avgEl || !bestEl) return;
+    
+    const validRuns = runHistory.filter(r => r.stats && r.stats.tps > 0);
+    runsEl.textContent = runHistory.length;
+    
+    if (validRuns.length > 0) {
+        const sumTps = validRuns.reduce((acc, r) => acc + parseFloat(r.stats.tps), 0);
+        const avgTps = sumTps / validRuns.length;
+        const bestTps = Math.max(...validRuns.map(r => parseFloat(r.stats.tps)));
+        
+        avgEl.textContent = avgTps.toFixed(1);
+        bestEl.textContent = bestTps.toFixed(1);
+    } else {
+        avgEl.textContent = "0.0";
+        bestEl.textContent = "0.0";
+    }
 }
 
 function renderHistory() {
-    const el = document.getElementById('history-list');
+    updateSessionStats();
     if (runHistory.length === 0) {
-        el.innerHTML = '<div class="history-empty">No runs yet</div>';
+        historyListEl.innerHTML = `<div class="history-empty">No runs yet</div>`;
         return;
     }
-    const clearBtn = `<button class="history-clear-btn" onclick="clearHistory()" title="Clear all history">✕ Clear</button>`;
-    el.innerHTML = clearBtn + runHistory.slice(0, 8).map(e => {
-        const timeStr = e.ts ? new Date(e.ts).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : '';
-        if (e.type === 'benchmark') {
-            return `<div class="history-item">
-                <span class="history-model">${e.model}</span>
-                <span class="history-meta">${e.latency}s · ${e.tps} t/s${timeStr ? ' · ' + timeStr : ''}</span>
-            </div>`;
-        } else if (e.type === 'suite') {
-            return `<div class="history-item history-suite">
-                <span class="history-model">🧪 Suite · 🏆 ${e.winner || '?'}</span>
-                <span class="history-meta">${e.count} model${e.count !== 1 ? 's' : ''} · 4 prompts${timeStr ? ' · ' + timeStr : ''}</span>
-            </div>`;
-        } else if (e.type === 'dataset') {
-            return `<div class="history-item" style="border-color:rgba(251,146,60,0.3);">
-                <span class="history-model">📊 Dataset · 🏆 ${e.winner || '?'}</span>
-                <span class="history-meta">${e.count} model${e.count !== 1 ? 's' : ''} · ${e.prompts || 8} prompts${timeStr ? ' · ' + timeStr : ''}</span>
-            </div>`;
-        } else {
-            return `<div class="history-item">
-                <span class="history-model">🏆 ${e.winner || '?'}</span>
-                <span class="history-meta">Compare (${e.count} models)${timeStr ? ' · ' + timeStr : ''}</span>
-            </div>`;
-        }
-    }).join('');
-}
-
-
-function clearHistory() {
-    runHistory = [];
-    localStorage.removeItem('slm_history');
-    renderHistory();
-}
-
-// ── Chat Message Bubbles ──────────────────────────────────────────────────────
-function appendMessage(role, text, meta = null) {
-    const history       = document.getElementById('chat-history');
-    const bubbleWrapper = document.createElement('div');
-    bubbleWrapper.className = `message-wrapper ${role}-wrapper`;
-    bubbleWrapper.style.cssText = 'display:flex;flex-direction:column;width:100%';
-
-    const bubble = document.createElement('div');
-    bubble.className = role === 'user' ? 'user-bubble' : (role === 'system-notice' ? 'system-notice-bubble' : 'ai-bubble');
-
-    let content = `<div>${text}</div>`;
-
-    if (role === 'ai') {
-        const copyBtn = `
-            <button class="copy-btn" title="Copy" onclick="copyToClipboard(this, \`${text.replace(/`/g, '\\`').replace(/\n/g, '\\n')}\`)">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-            </button>`;
-        content = copyBtn + content;
-    }
-
-    if (meta) content += `<div class="ai-meta">${meta}</div>`;
-
-    bubble.innerHTML = content;
-    bubbleWrapper.appendChild(bubble);
-    history.appendChild(bubbleWrapper);
-
-    const scrollArea = document.getElementById('main-scroll-area');
-    scrollArea.scrollTo({ top: scrollArea.scrollHeight, behavior: 'smooth' });
-}
-
-async function copyToClipboard(btn, text) {
-    try {
-        await navigator.clipboard.writeText(text);
-        const orig = btn.innerHTML;
-        btn.classList.add('copied');
-        btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
-        setTimeout(() => { btn.classList.remove('copied'); btn.innerHTML = orig; }, 2000);
-    } catch (_) {}
-}
-
-// ── Analytics Hub (full evaluate suite) ──────────────────────────────────────
-function renderAdvancedUI(results) {
-    const leaderboardBody = document.getElementById('leaderboard-body');
-    leaderboardBody.innerHTML = results.sort((a,b) => b.score - a.score).map((r, i) => `
-        <tr>
-            <td>
-                <div style="font-weight:700">${r.model.toUpperCase()}</div>
-                <div style="font-size:0.7rem;color:var(--text-low)">Rank #${i+1}</div>
-            </td>
-            <td style="color:var(--accent-primary);font-weight:800;font-size:1.1rem">${r.score}</td>
-            <td>${r.avg_tps}</td>
-            <td><button class="metric-btn" onclick="showModelDetails()">VIEW</button></td>
-        </tr>`).join('');
-
-    // Tasks
-    const tasksMap = {};
-    results.forEach(mr => {
-        mr.tasks.forEach(task => {
-            if (!tasksMap[task.task_id]) tasksMap[task.task_id] = { name: task.task_name || 'Custom', prompt: task.prompt, results: [] };
-            tasksMap[task.task_id].results.push({ model: mr.model, response: task.response, latency: task.latency, tps: task.tps, tokens: task.tokens });
-        });
-    });
-
-    document.getElementById('tasks-container').innerHTML = Object.values(tasksMap).map(task => `
-        <div class="task-block">
-            <h4 style="color:white;margin-bottom:0.5rem">Task: ${task.name}</h4>
-            <div class="task-prompt-box">${task.prompt}</div>
-            <div class="task-model-results">
-                ${task.results.map(res => `
-                    <div class="model-task-card">
-                        <div style="font-size:0.7rem;color:var(--accent-cyan);margin-bottom:0.4rem;font-weight:800">${res.model.toUpperCase()}</div>
-                        <div class="task-response-scroll">${res.response}</div>
-                        <div style="font-size:0.65rem;color:var(--text-low);margin-top:0.5rem">${res.latency}s | ${res.tps} TPS</div>
-                    </div>`).join('')}
+    historyListEl.innerHTML = "";
+    runHistory.forEach(run => {
+        const item = document.createElement("div");
+        item.className = "history-item";
+        item.innerHTML = `
+            <div class="history-item-title" title="${run.prompt}">${run.prompt}</div>
+            <div class="history-item-meta">
+                <span>${run.type}</span>
+                <span>${run.model} • ${run.date}</span>
             </div>
-        </div>`).join('');
-
-    updateChart(results);
-}
-
-function updateChartMetric(metric) {
-    currentMetric = metric;
-    document.querySelectorAll('.metric-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.innerText.toLowerCase() === metric);
-    });
-    if (currentResults.length > 0) updateChart(currentResults);
-}
-
-function updateChart(results) {
-    const ctx = document.getElementById('performanceChart').getContext('2d');
-    if (chartInstance) chartInstance.destroy();
-
-    const labels = results.map(r => r.model.toUpperCase());
-    let data, label, color = '#7c3aed';
-
-    if (currentMetric === 'score')   { data = results.map(r => r.score);       label = 'Score'; }
-    else if (currentMetric === 'tps'){ data = results.map(r => r.avg_tps);     label = 'TPS';   color = '#06b6d4'; }
-    else                             { data = results.map(r => r.avg_latency);  label = 'Latency'; color = '#f43f5e'; }
-
-    chartInstance = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels,
-            datasets: [{ label, data, borderColor: color, backgroundColor: `${color}1a`, fill: true, tension: 0.4, pointRadius: 4 }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' } },
-                x: { grid: { display: false } }
-            },
-            plugins: { legend: { display: false } }
-        }
+        `;
+        item.addEventListener("click", () => {
+            promptInput.value = run.prompt === "Evaluation Suite" || run.prompt === "Dataset Benchmark" ? "" : run.prompt;
+            promptInput.focus();
+        });
+        historyListEl.appendChild(item);
     });
 }
+// Render history on startup
+renderHistory();
 
-function showModelDetails() {
-    document.getElementById('tasks-panel').scrollIntoView({ behavior: 'smooth' });
+// ════════════════════════════════════════════════════════════════════════════
+// LEFT ICON BAR LOGIC
+// ════════════════════════════════════════════════════════════════════════════
+const icons = {
+    eye: document.getElementById("icon-eye"),
+    plus: document.getElementById("icon-plus"),
+    search: document.getElementById("icon-search"),
+    archive: document.getElementById("icon-archive"),
+    cubes: document.getElementById("icon-cubes"),
+    print: document.getElementById("icon-print"),
+    code: document.getElementById("icon-code"),
+    palette: document.getElementById("icon-palette"),
+    download: document.getElementById("icon-download"),
+};
+
+const refreshModelsBtn = document.getElementById("refresh-models-btn");
+if (refreshModelsBtn) refreshModelsBtn.onclick = () => fetchModels();
+
+const userAvatar = document.getElementById("icon-user");
+if (userAvatar) userAvatar.onclick = () => alert("User Profile: Logged in as Local User");
+
+if (icons.eye) icons.eye.onclick = () => document.body.classList.toggle("compact-mode");
+if (icons.plus) icons.plus.onclick = () => { promptInput.value = ""; resultsContainer.innerHTML = ""; promptInput.focus(); };
+if (icons.search) icons.search.onclick = () => promptInput.focus();
+if (icons.archive) icons.archive.onclick = () => {
+    const hist = document.querySelector(".history-section");
+    if (hist) hist.style.display = hist.style.display === "none" ? "block" : "none";
+};
+if (icons.cubes) icons.cubes.onclick = () => fetchModels();
+if (icons.print) icons.print.onclick = () => window.print();
+if (icons.code) icons.code.onclick = () => window.open(`${API_BASE_URL}/docs`, "_blank");
+if (icons.palette) {
+    const accents = ["#8b5cf6", "#3b82f6", "#10b981", "#f97316"];
+    let aIdx = 0;
+    icons.palette.onclick = () => {
+        aIdx = (aIdx + 1) % accents.length;
+        document.documentElement.style.setProperty("--accent-purple", accents[aIdx]);
+        document.documentElement.style.setProperty("--accent-purple-light", accents[aIdx]);
+    };
 }
+if (icons.download) icons.download.onclick = () => {
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(runHistory, null, 2));
+    const dlAnchorElem = document.createElement("a");
+    dlAnchorElem.setAttribute("href", dataStr);
+    dlAnchorElem.setAttribute("download", "slm_benchmark_history.json");
+    dlAnchorElem.click();
+};
 
-// ── Loader ─────────────────────────────────────────────────────────────────────
-function showLoader(show) {
-    const askBtn  = document.getElementById('ask-btn');
-    const stopBtn = document.getElementById('stop-btn');
-    const input   = document.getElementById('prompt-input');
-    const benchBtn  = document.getElementById('benchmark-btn');
-    const cmpBtn    = document.getElementById('compare-btn');
-    const suiteBtn  = document.getElementById('suite-btn');
-    const datasetBtn = document.getElementById('dataset-btn');
+// ════════════════════════════════════════════════════════════════════════════
+// TEMP SLIDER LOGIC
+// ════════════════════════════════════════════════════════════════════════════
+const tempWrap = document.getElementById("temp-slider-wrap");
+const tempTrack = document.getElementById("temp-track");
+const tempFill = document.getElementById("temp-fill");
+const tempThumb = document.getElementById("temp-thumb");
+const tempVal = document.getElementById("temp-val-display");
 
-    if (show) {
-        askBtn.classList.add('hidden');
-        stopBtn.classList.remove('hidden');
-        input.setAttribute('disabled', 'true');
-        input.style.opacity = '0.5';
-        benchBtn.disabled  = true;
-        cmpBtn.disabled    = true;
-        suiteBtn.disabled  = true;
-        datasetBtn.disabled = true;
-    } else {
-        askBtn.classList.remove('hidden');
-        stopBtn.classList.add('hidden');
-        input.removeAttribute('disabled');
-        input.style.opacity = '1';
-        benchBtn.disabled  = false;
-        cmpBtn.disabled    = false;
-        suiteBtn.disabled  = false;
-        datasetBtn.disabled = false;
-        input.focus();
+let currentTemp = 0.7; // Global temp that could be sent to backend later
+
+if (tempWrap && tempTrack && tempFill && tempThumb && tempVal) {
+    let isDragging = false;
+
+    function updateTempFromEvent(e) {
+        const rect = tempTrack.getBoundingClientRect();
+        let x = e.clientX - rect.left;
+        x = Math.max(0, Math.min(x, rect.width));
+        const pct = x / rect.width;
+        
+        currentTemp = (pct * 2.0).toFixed(1); // Scale 0 to 2.0
+        
+        tempFill.style.width = (pct * 100) + "%";
+        tempThumb.style.left = (pct * 100) + "%";
+        tempThumb.style.transform = "translateX(-50%)";
+        tempVal.textContent = currentTemp;
     }
-}
 
-// ── Utility ───────────────────────────────────────────────────────────────────
-function escHtml(str) {
-    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    tempWrap.addEventListener("mousedown", (e) => {
+        isDragging = true;
+        updateTempFromEvent(e);
+    });
+
+    document.addEventListener("mousemove", (e) => {
+        if (isDragging) updateTempFromEvent(e);
+    });
+
+    document.addEventListener("mouseup", () => {
+        isDragging = false;
+    });
+    
+    // Initial setup
+    const initialPct = currentTemp / 2.0;
+    tempFill.style.width = (initialPct * 100) + "%";
+    tempThumb.style.left = (initialPct * 100) + "%";
+    tempThumb.style.transform = "translateX(-50%)";
 }

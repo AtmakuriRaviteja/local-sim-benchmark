@@ -26,25 +26,83 @@ def get_hardware_metrics():
 
 def get_system_info():
     """
-    Returns static system information like CPU cores and RAM size.
+    Returns real system information: CPU model, RAM size, GPU name, and runtime.
     """
+    import platform
+
+    # ── CPU ──────────────────────────────────────────────────────────────────
     try:
-        cpu_count = psutil.cpu_count(logical=True)
-        ram_gb = round(psutil.virtual_memory().total / (1024**3))
-        return {
-            "cpu": f"{cpu_count}-Core Processor",
-            "ram": f"{ram_gb}GB RAM",
-            "gpu": "Unknown GPU",
-            "runtime": "Ollama",
-        }
-    except Exception as e:
-        logging.error(f"Error getting system info: {e}")
-        return {
-            "cpu": "Unknown Processor",
-            "ram": "Unknown RAM",
-            "gpu": "Unknown GPU",
-            "runtime": "Ollama",
-        }
+        cpu_model = platform.processor()  # e.g. "Intel64 Family 6 Model..."
+        if not cpu_model or cpu_model == "":
+            cpu_model = f"{psutil.cpu_count(logical=True)}-Core Processor"
+        else:
+            # Shorten verbose strings: keep brand + core count
+            cores = psutil.cpu_count(logical=False) or psutil.cpu_count(logical=True)
+            # Remove excessive detail, keep the meaningful part
+            cpu_model = cpu_model.split(",")[0].strip()
+            if len(cpu_model) > 30:
+                cpu_model = cpu_model[:30].strip()
+            cpu_model = f"{cpu_model} ({cores}C)"
+    except Exception:
+        cpu_model = f"{psutil.cpu_count(logical=True)}-Core Processor"
+
+    # ── RAM ──────────────────────────────────────────────────────────────────
+    try:
+        ram_gb = round(psutil.virtual_memory().total / (1024 ** 3))
+        ram_str = f"{ram_gb} GB RAM"
+    except Exception:
+        ram_str = "Unknown RAM"
+
+    # ── GPU ──────────────────────────────────────────────────────────────────
+    gpu_name = "Unknown GPU"
+    try:
+        system = platform.system()
+        if system == "Windows":
+            result = subprocess.run(
+                ["wmic", "path", "win32_VideoController", "get", "name"],
+                capture_output=True, text=True, timeout=5
+            )
+            lines = [l.strip() for l in result.stdout.splitlines() if l.strip() and l.strip().lower() != "name"]
+            if lines:
+                gpu_name = lines[0]
+        elif system == "Linux":
+            # Try nvidia-smi first
+            try:
+                result = subprocess.run(
+                    ["nvidia-smi", "--query-gpu=name", "--format=csv,noheader"],
+                    capture_output=True, text=True, timeout=5
+                )
+                if result.returncode == 0 and result.stdout.strip():
+                    gpu_name = result.stdout.strip().splitlines()[0]
+                else:
+                    raise RuntimeError("no nvidia")
+            except Exception:
+                result = subprocess.run(
+                    ["lspci"], capture_output=True, text=True, timeout=5
+                )
+                for line in result.stdout.splitlines():
+                    if "VGA" in line or "3D" in line or "Display" in line:
+                        gpu_name = line.split(":")[-1].strip()
+                        break
+        elif system == "Darwin":
+            result = subprocess.run(
+                ["system_profiler", "SPDisplaysDataType"],
+                capture_output=True, text=True, timeout=10
+            )
+            for line in result.stdout.splitlines():
+                if "Chipset Model" in line:
+                    gpu_name = line.split(":")[-1].strip()
+                    break
+    except Exception:
+        gpu_name = "Unknown GPU"
+
+    return {
+        "cpu": cpu_model,
+        "ram": ram_str,
+        "gpu": gpu_name,
+        "runtime": "Ollama",
+    }
+
 
 
 def get_models():

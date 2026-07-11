@@ -407,5 +407,178 @@
                 "timestamp": "2026-03-16T10:00:46.494184"
             }
         ]
+    },
+    {
+        "timestamp": "2026-07-10T12:00:14.359695",
+        "results": [
+            {
+                "model": "tinyllama:latest",
+                "tasks": [
+                    {
+                        "task_id": "explanation",
+                        "task_name": "Explanation",
+                        "prompt": "Explain artificial intelligence in one paragraph.",
+                        "latency": 1.6,
+                        "tps": 194.16,
+                        "tokens": 228,
+                        "cpu": 18.6,
+                        "ram": 67.2,
+                        "response": "Artificial intelligence (AI) refers to the intelligence exhibited by machines and software systems, which can mimic or surpass human abilities based on vast amounts of data. In a nutshell, AI is a complex field that involves developing algorithms, systems, and applications that excel at recognizing patterns, making decisions, and performing tasks in areas such as healthcare, finance, manufacturing, education, and more. The development of AI has been accelerating rapidly in recent years, with many industries already benefiting from its application, such as automotive, biotechnology, and healthcare. At the same time, there is a growing recognition that AI poses significant challenges that need to be addressed before it can truly impact human affairs in the way we once imagined. Nonetheless, the potential benefits of AI are immense, including improved efficiency, reduced costs, better decision-making capabilities, and enhanced personalized experiences for users. The future of AI is still uncertain, but one thing is certain: it will shape the future of human civilization."
+                    },
+                    {
+                        "task_id": "coding",
+                        "task_name": "Coding",
+                        "prompt": "Write a Python function that calculates Fibonacci numbers.",
+                        "latency": 1.48,
+                        "tps": 224.58,
+                        "tokens": 268,
+                        "cpu": 9.3,
+                        "ram": 67.2,
+                        "response": "Yes, I can write a Python function to calculate Fibonaci numbers. Here's an example:\n\n```python\ndef fibonacci(n):\n    if n == 0 or n == 1:\n        return [0, 1]\n    else:\n        a, b = [0, 1], []\n        for I in range(2, n+1):\n            temp = a[-1] + b[-1]\n            a.append(temp)\n            b.append(temp + b[-1])\n        return b[:-1]\n```\n\nThis function takes an argument `n` and returns a list of Fibonacci numbers up to `n`. It uses a recursive approach to create the sequence by appending each number in the previous sequence. Each time we find the value of `a[-1]` + `b[-1]` (with our recursive formula), we append it to the end of our temporary list `a` and move on to the next number in the previous sequence, `b`. In order to handle negative values or non-integer inputs for `n`, the function uses a list comprehension to generate the output. This ensures that all possible Fibonacci numbers are calculated properly."
+                    },
+                    {
+                        "task_id": "reasoning",
+                        "task_name": "Reasoning",
+                        "prompt": "Explain why the sky is blue in simple terms.",
+                        "latency": 1.0,
+                        "tps": 224.79,
+                        "tokens": 166,
+                        "cpu": 11.2,
+                        "ram": 67.2,
+                        "response": "The sky is blue because of its color, which comes from elements such as nitrogen (blue), oxygen (green), and sulfur dioxide (grey) reacting with other gases to form a visible spectrum of colors known as the sun's spectrum. These colors blend together in a way that creates the appearance of the sky being blue, as blue is one of the most common colors we see in nature. In fact, it's estimated that blue represents only about 0.7% of all the light that enters our eyes but provides around 40-50% of the perceived color we experience when looking at the world from above. The rest is made up by green, red, brown, yellow, and other colors we don't typically notice in nature."
+                    },
+                    {
+                        "task_id": "summarization",
+                        "task_name": "Summarization",
+                        "prompt": "Summarize the theory of relativity in a few sentences.",
+                        "latency": 0.68,
+                        "tps": 225.03,
+                        "tokens": 100,
+                        "cpu": 8.1,
+                        "ram": 67.2,
+                        "response": "The theory of relativity is a fundamental concept in physics that explains how objects move through space and time relative to each other, based on the principle of special relativity. It posits that all objects and forces are affected by the velocity of light c, which is the speed of light in a vacuum. This principle applies to all matter, regardless of its mass or density, and allows for the concept of gravity as a result of the curvature of space-time caused by mass."
+                    }
+                ],
+                "avg_latency": 1.19,
+                "avg_tps": 217.14,
+                "avg_cpu": 11.8,
+                "avg_ram": 67.2,
+                "total_tokens": 762,
+                "score": 182.47,
+                "timestamp": "2026-07-10T11:58:07.343450"
+            },
+            {
+                "model": "mistral:latest",
+                "tasks": [
+                    {
+                        "task_id": "explanation",
+                        "task_name": "Explanation",
+                        "prompt": "Explain artificial intelligence in one paragraph.",
+                        "latency": 28.55,
+                        "tps": 14.66,
+                        "tokens": 128,
+                        "cpu": 24.6,
+                        "ram": 72.9,
+                        "response": " Artificial Intelligence (AI) refers to the simulation of human intelligence processes by machines, particularly computer systems. These processes include learning, reasoning, problem-solving, perception, and language understanding. AI is designed to mimic or exceed human intellectual functions, enabling machines to perform tasks that would normally require human intelligence. It's a broad field encompassing various subfields like machine learning, deep learning, natural language processing, robotics, computer vision, and more. The ultimate goal of AI is to create intelligent machines capable of understanding the world in the way humans do, enabling them to adapt and respond to new situations effectively."
+                    },
+                    {
+                        "task_id": "coding",
+                        "task_name": "Coding",
+                        "prompt": "Write a Python function that calculates Fibonacci numbers.",
+                        "latency": 18.93,
+                        "tps": 13.5,
+                        "tokens": 247,
+                        "cpu": 43.0,
+                        "ram": 78.3,
+                        "response": " Here is a simple Python function that generates Fibonacci numbers using recursion:\n\n```python\ndef fibonacci(n):\n    if n <= 0:\n        return None\n    elif n == 1:\n        return 0\n    elif n == 2:\n        return 1\n    else:\n        return fibonacci(n-1) + fibonacci(n-2)\n```\n\nHowever, this function has an exponential time complexity due to the recursive nature. A more efficient version using iterative approach is as follows:\n\n```python\ndef fibonacci(n):\n    if n <= 0:\n        return None\n    fib_sequence = [0, 1]\n\n    for i in range(2, n+1):\n        fib_sequence.append(fib_sequence[i-1] + fib_sequence[i-2])\n\n    return fib_sequence[-1]\n```\nThis version of the function has a linear time complexity and is more suitable for calculating Fibonacci numbers with larger values of `n`."
+                    },
+                    {
+                        "task_id": "reasoning",
+                        "task_name": "Reasoning",
+                        "prompt": "Explain why the sky is blue in simple terms.",
+                        "latency": 10.49,
+                        "tps": 13.72,
+                        "tokens": 136,
+                        "cpu": 35.6,
+                        "ram": 78.3,
+                        "response": " The sky appears blue because of a natural phenomenon called Rayleigh scattering. When sunlight, which is white light containing all colors, reaches Earth's atmosphere, it collides with molecules and tiny particles like dust and water droplets. As a result, some colors are scattered more than others due to their wavelengths.\n\nBlue light has shorter wavelengths and gets scattered more easily because of its smaller size compared to the wavelength. As you look at the sky from Earth, you see this scattered blue light coming towards you from every direction, making the sky appear blue to our eyes. This is why the sky looks blue during the daytime!"
+                    },
+                    {
+                        "task_id": "summarization",
+                        "task_name": "Summarization",
+                        "prompt": "Summarize the theory of relativity in a few sentences.",
+                        "latency": 12.47,
+                        "tps": 13.75,
+                        "tokens": 163,
+                        "cpu": 44.7,
+                        "ram": 78.4,
+                        "response": " The Theory of Relativity, proposed by Albert Einstein, consists of two parts: Special Relativity (1905) and General Relativity (1915).\n\nSpecial Relativity states that the laws of physics are the same for all observers moving at constant velocities relative to each other. It introduces the concept that space and time are interconnected into a four-dimensional spacetime, leading to the famous equation E=mc^2 (energy equals mass times the speed of light squared).\n\nGeneral Relativity is an extension of Special Relativity that includes gravity. It suggests that massive objects cause a distortion in spacetime, which we perceive as gravity. This theory has been confirmed by numerous observations and experiments and is a fundamental part of modern physics."
+                    }
+                ],
+                "avg_latency": 17.61,
+                "avg_tps": 13.91,
+                "avg_cpu": 37.0,
+                "avg_ram": 77.0,
+                "total_tokens": 674,
+                "score": 0.79,
+                "timestamp": "2026-07-10T11:58:12.907927"
+            },
+            {
+                "model": "phi3:latest",
+                "tasks": [
+                    {
+                        "task_id": "explanation",
+                        "task_name": "Explanation",
+                        "prompt": "Explain artificial intelligence in one paragraph.",
+                        "latency": 21.37,
+                        "tps": 32.84,
+                        "tokens": 169,
+                        "cpu": 44.1,
+                        "ram": 74.8,
+                        "response": "Artificial intelligence (AI) is a field of computer science that focuses on creating intelligent machines capable of performing tasks that normally require human cognition, such as learning, problem-solving and pattern recognition. AI systems use algorithms to analyze data, recognize patterns, make predictions or decisions with minimal human intervention. These technologies are applied across a diverse range of industries including healthcare, finance, transportation, entertainment, education, manufacturing among others for improved efficiency, accuracy and productivity. Advances in AI technology have led to the development of self-learning systems like machine learning and deep learning that can improve their performance over time without being explicitly programmed, leading to groundbreaking innovations such as autonomous vehicles, virtual personal assistants and predictive analytics tools among others."
+                    },
+                    {
+                        "task_id": "coding",
+                        "task_name": "Coding",
+                        "prompt": "Write a Python function that calculates Fibonacci numbers.",
+                        "latency": 6.59,
+                        "tps": 32.96,
+                        "tokens": 202,
+                        "cpu": 60.2,
+                        "ram": 71.2,
+                        "response": "```python\n\ndef fibonacci(n):\n\n    if n <= 0:\n\n        return \"Input must be a positive integer.\"\n\n    elif n == 1:\n\n        return 0\n\n    elif n == 2:\n        return 1\n\n    else:\n\n        return fibonacci(n-1) + fibonacci(n-2)\n\n```\nWith this function, you can input the position of a Fibonacci number and it will output that specific number. For example, `fibonacci(5)` would yield 3 since we start counting from zero in most mathematical definitions (0, 1, 1, 2, 3).\n\nHowever, this naive recursive implementation has an exponential time complexity because of the repeated calculations for lower Fibonacci numbers. For larger inputs, it becomes impractical due to its performance. To improve upon that:"
+                    },
+                    {
+                        "task_id": "reasoning",
+                        "task_name": "Reasoning",
+                        "prompt": "Explain why the sky is blue in simple terms.",
+                        "latency": 13.85,
+                        "tps": 30.23,
+                        "tokens": 405,
+                        "cpu": 53.0,
+                        "ram": 71.7,
+                        "response": "The sky appears blue due to a phenomenon called Rayleigh scattering. When sunlight reaches Earth, it's made up of different colors that blend together like white light when they come through an object or substance. As this light enters the atmosphere near our planet, it encounters tiny particles and molecules which are much smaller than its wavelength - these can be gases like nitrogen and oxygen as well as small water droplets in a cloud.\n\n\nThese bits of matter scatter shorter-wavelength light, such blue and violet colors, more efficiently across the sky, because they have higher energy compared to reds or yellows (which travel further). However, even though our eyes are more sensitive to blue, that's not why we perceive a bluish color. The sunlight is actually emitting an equal amount of violet light as well; it just scatters in all directions and some get absorbed by the upper atmosphere before they reach us, making less visible at this point during the daytime compared to blue.\n\n\nAdditionally, even though our eyes are better at seeing reds than blues on a dark background, under bright sunlight conditions which is when we observe these sky colors most often - both appear more vibrant and hence contribute equally in perception of color by Rayleigh scattering effect. The Sun itself emits light across the entire spectrum but appears yellowish-orange because its surface temperature filters out much of ultraviolet radiation, allowing only shorter wavelengths to reach us visibly (albeit less so at sunrise and sunset when they can appear red or orange due to angle).\n\n\nIt's the combination of Rayleigh scattering by these atmospheric particles along with how our own eyes perceive color that gives us a sky predominantly in shades of blue during clear, daytime conditions."
+                    },
+                    {
+                        "task_id": "summarization",
+                        "task_name": "Summarization",
+                        "prompt": "Summarize the theory of relativity in a few sentences.",
+                        "latency": 7.57,
+                        "tps": 27.42,
+                        "tokens": 190,
+                        "cpu": 50.5,
+                        "ram": 72.7,
+                        "response": "The Theory of Relativity, proposed by Albert Einstein, fundamentally changed our understanding of space and time as interwoven into what we now call spacetime. It consists of two parts: Special Relativity (1905) which posits that the laws of physics are identical for all observers in uniform motion relative to one another and introduces the concept that both measurements of time and lengths vary depending on an observer' end velocity, known as Lorentz transformation; General Relativity (1916), a continuation built upon Special Relativity but applicable to non-uniform movement. It posits gravity not as a force but rather as curving space around massive objects which influences the motion of matter\u2014the principle behind gravitational attraction, where time slows down near large masses and lengths contract along with increasing speed or closer proximity to a mass' center (gravitational time dilation)."
+                    }
+                ],
+                "avg_latency": 12.35,
+                "avg_tps": 30.86,
+                "avg_cpu": 52.0,
+                "avg_ram": 72.6,
+                "total_tokens": 966,
+                "score": 2.5,
+                "timestamp": "2026-07-10T11:59:24.148538"
+            }
+        ]
     }
 ]

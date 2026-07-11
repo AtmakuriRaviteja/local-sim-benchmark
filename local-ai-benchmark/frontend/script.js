@@ -1,4 +1,4 @@
-﻿const API_BASE_URL = "http://localhost:8000";
+const API_BASE_URL = "http://localhost:8000";
 
 const promptInput      = document.getElementById("prompt-input");
 const modelSelect      = document.getElementById("model-select");
@@ -13,17 +13,26 @@ const resultsContainer = document.getElementById("results-container");
 // ON LOAD: populate models dropdown + live system info
 // ════════════════════════════════════════════════════════════════════════════
 document.addEventListener("DOMContentLoaded", async () => {
-    // ── Models ──────────────────────────────────────────────────────────────
+    fetchModels();
+    fetchSystemInfo();
+});
+
+async function fetchModels() {
     try {
         const modRes  = await fetch(`${API_BASE_URL}/models`);
         const modData = await modRes.json();
-        const modelsList = document.querySelector(".models-list");
+        const modelsList = document.getElementById("sidebar-models-list");
         if (modelsList && modData.models && modData.models.length > 0) {
             modelsList.innerHTML = "";
             modData.models.forEach(m => {
                 const div = document.createElement("div");
                 div.className = "model-item";
-                div.textContent = m;
+                div.innerHTML = `<div class="model-name"><span class="status-dot"></span>${m}</div><span class="model-size">Loaded</span>`;
+                div.onclick = () => {
+                    document.querySelectorAll(".model-item").forEach(el => el.classList.remove("active"));
+                    div.classList.add("active");
+                    modelSelect.value = m;
+                };
                 modelsList.appendChild(div);
             });
             modelSelect.innerHTML = "";
@@ -33,10 +42,13 @@ document.addEventListener("DOMContentLoaded", async () => {
                 opt.textContent = m.replace(":latest", "");
                 modelSelect.appendChild(opt);
             });
+            // highlight first
+            if (modelsList.firstChild) modelsList.firstChild.classList.add("active");
         }
     } catch (e) { console.warn("Failed to load models", e); }
+}
 
-    // ── System Info ─────────────────────────────────────────────────────────
+async function fetchSystemInfo() {
     try {
         const sysRes  = await fetch(`${API_BASE_URL}/system-info`);
         const sysData = await sysRes.json();
@@ -52,7 +64,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             if (el) el.textContent = "Unavailable";
         });
     }
-});
+}
 
 // ════════════════════════════════════════════════════════════════════════════
 // HELPERS
@@ -74,38 +86,62 @@ function setButtonsBusy(busy) {
 // Render a non-streaming result card
 function createResultCard(data, isBenchmark = false) {
     const card = document.createElement("div");
-    card.className = `result-card ${isBenchmark ? "benchmark-item" : ""}`;
+    card.className = "result-card";
+    
     if (data.error) {
-        card.innerHTML = `<h3>${data.model}</h3><p class="error">Error: ${data.error}</p>`;
+        card.innerHTML = `
+            <div class="rc-header">
+                <div class="rc-header-left">
+                    <span class="rc-model-pill">${data.model}</span>
+                    <span class="rc-prompt-txt">Error</span>
+                </div>
+            </div>
+            <div class="rc-body"><span class="error">${data.error}</span></div>`;
     } else {
         card.innerHTML = `
-            <h3>${isBenchmark ? "" : "Model: "}${data.model}${data.score ? ` (Score: ${data.score})` : ""}</h3>
-            ${data.response ? `<div class="response-text">${data.response}</div>` : ""}
-            <div class="meta">
-                ${data.response_length || data.tokens ? `<span>Length: ${data.response_length || data.tokens} tokens</span>` : ""}
-                ${data.response_time || data.latency || data.avg_latency ? `<span class="time-badge">Time: ${data.response_time || data.latency || data.avg_latency}s</span>` : ""}
-                ${data.avg_tps ? `<span>Speed: ${data.avg_tps} TPS</span>` : ""}
-                ${data.accuracy_pct !== undefined ? `<span>Accuracy: ${data.accuracy_pct}%</span>` : ""}
+            <div class="rc-header">
+                <div class="rc-header-left">
+                    <span class="rc-model-pill">${data.model}</span>
+                    <span class="rc-prompt-txt">${data.prompt ? "Prompt: " + data.prompt : (data.score ? `Score: ${data.score}` : "")}</span>
+                </div>
+            </div>
+            ${data.response ? `<div class="rc-body">${data.response}</div>` : ""}
+            <div class="rc-footer">
+                ${(data.response_time || data.latency || data.avg_latency) ? `<div class="rc-stat"><div class="rc-stat-val green">${data.response_time || data.latency || data.avg_latency}s</div><div class="rc-stat-label">TOTAL</div></div>` : ""}
+                ${data.avg_tps ? `<div class="rc-stat"><div class="rc-stat-val purple">${data.avg_tps}</div><div class="rc-stat-label">TOK/S</div></div>` : ""}
+                ${(data.response_length || data.tokens) ? `<div class="rc-stat"><div class="rc-stat-val orange">${data.response_length || data.tokens}</div><div class="rc-stat-label">TOKENS</div></div>` : ""}
+                ${data.accuracy_pct !== undefined ? `<div class="rc-stat"><div class="rc-stat-val blue">${data.accuracy_pct}%</div><div class="rc-stat-label">ACCURACY</div></div>` : ""}
             </div>`;
     }
     return card;
 }
 
 // Handle a streaming /ask or /benchmark response
-async function handleStreamingResponse(response, container, modelName, isBenchmark = false) {
+async function handleStreamingResponse(response, container, modelName, isBenchmark = false, prompt = "") {
     const reader  = response.body.getReader();
     const decoder = new TextDecoder("utf-8");
 
     const card = document.createElement("div");
-    card.className = `result-card ${isBenchmark ? "benchmark-item" : ""}`;
+    card.className = "result-card";
+    const now = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'});
     card.innerHTML = `
-        <h3>${isBenchmark ? "" : "Model: "}${modelName}</h3>
-        <div class="response-text streaming"></div>
-        <div class="meta" style="display:none;"></div>`;
+        <div class="rc-header">
+            <div class="rc-header-left">
+                <span class="rc-model-pill">${modelName}</span>
+                <span class="rc-prompt-txt">Chat "${prompt}"</span>
+            </div>
+            <div class="rc-header-right">
+                <span class="rc-time">${now}</span>
+                <button class="rc-copy-btn">Copy</button>
+            </div>
+        </div>
+        <div class="rc-body streaming"></div>
+        <div class="rc-footer" style="display:none;"></div>
+    `;
     container.appendChild(card);
 
-    const textDiv = card.querySelector(".response-text");
-    const metaDiv = card.querySelector(".meta");
+    const textDiv = card.querySelector(".rc-body");
+    const metaDiv = card.querySelector(".rc-footer");
     let fullText  = "";
 
     while (true) {
@@ -126,8 +162,12 @@ async function handleStreamingResponse(response, container, modelName, isBenchma
                     textDiv.classList.remove("streaming");
                     metaDiv.style.display = "flex";
                     metaDiv.innerHTML = `
-                        <span>Length: ${data.response_length || data.token_count} tokens</span>
-                        <span class="time-badge">Time: ${data.response_time || data.latency}s</span>`;
+                        <div class="rc-stat"><div class="rc-stat-val green">${data.response_time || data.latency || "0.0"}s</div><div class="rc-stat-label">TOTAL</div></div>
+                        ${data.tokens_per_sec ? `<div class="rc-stat"><div class="rc-stat-val purple">${data.tokens_per_sec}</div><div class="rc-stat-label">TOK/S</div></div>` : ""}
+                        <div class="rc-stat"><div class="rc-stat-val orange">${data.response_length || data.token_count || 0}</div><div class="rc-stat-label">TOKENS</div></div>
+                        <div class="rc-stat"><div class="rc-stat-val blue">${fullText.split(/\s+/).length}</div><div class="rc-stat-label">WORDS</div></div>
+                    `;
+                    return { tps: data.tokens_per_sec || 0, time: data.response_time || data.latency || 0 };
                 }
             } catch (_) {}
         }
@@ -137,12 +177,15 @@ async function handleStreamingResponse(response, container, modelName, isBenchma
 // ════════════════════════════════════════════════════════════════════════════
 // QUICK TEST BUTTONS
 // ════════════════════════════════════════════════════════════════════════════
-document.querySelectorAll(".quick-test-btn").forEach(btn => {
+// ────────────────────────────────────────────────────────────────────────────
+// QUICK CARD BUTTONS (new UI)
+// ────────────────────────────────────────────────────────────────────────────
+document.querySelectorAll(".qt-btn").forEach(btn => {
     btn.addEventListener("click", () => {
         const prompt = btn.dataset.prompt;
         const action = btn.dataset.action || "ask";
         if (!prompt) return;
-        document.querySelectorAll(".quick-test-btn").forEach(b => b.classList.remove("active"));
+        document.querySelectorAll(".qt-btn").forEach(b => b.classList.remove("active"));
         btn.classList.add("active");
         promptInput.value = prompt;
         if      (action === "benchmark") benchmarkBtn.click();
@@ -171,18 +214,32 @@ if (reviewBtn) {
 // ════════════════════════════════════════════════════════════════════════════
 
 // ── Ask (chat) ──────────────────────────────────────────────────────────────
+// Helper: switch to results view
+function showResultsSection() {
+    const hero    = document.getElementById("hero-section");
+    const results = document.getElementById("results-section");
+    if (hero)    hero.style.display    = "none";
+    if (results) results.classList.add("visible");
+}
+
 askBtn.onclick = async () => {
     const prompt = promptInput.value.trim();
     const model  = modelSelect.value;
     if (!prompt) { promptInput.focus(); return; }
+    promptInput.value = ""; // Clear input immediately
+    showResultsSection();
     setButtonsBusy(true);
     resultsContainer.innerHTML = `<p class="placeholder"><i class="fa-solid fa-circle-notch fa-spin"></i>&nbsp; Generating response&hellip;</p>`;
     try {
         const res = await fetch(`${API_BASE_URL}/ask?prompt=${encodeURIComponent(prompt)}&model=${encodeURIComponent(model)}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
         resultsContainer.innerHTML = "";
-        await handleStreamingResponse(res, resultsContainer, model);
+        data.prompt = prompt;
+        resultsContainer.appendChild(createResultCard(data, false));
+        saveToHistory("Ask", prompt, model, { tps: 0, time: data.response_time || 0 });
     } catch (err) {
-        resultsContainer.innerHTML = `<p class="error">Failed to connect to backend. Is it running?</p>`;
+        resultsContainer.innerHTML = `<p class="error">Backend error: ${err.message}</p>`;
     } finally { setButtonsBusy(false); }
 };
 
@@ -191,16 +248,18 @@ benchmarkBtn.onclick = async () => {
     const prompt = promptInput.value.trim();
     const model  = modelSelect.value;
     if (!prompt) { promptInput.focus(); return; }
+    promptInput.value = ""; // Clear input immediately
+    showResultsSection();
     setButtonsBusy(true);
-    resultsContainer.innerHTML = `<p class="placeholder"><i class="fa-solid fa-circle-notch fa-spin"></i>&nbsp; Running benchmark&hellip;</p>`;
+    resultsContainer.innerHTML = `<p class="placeholder"><i class="fa-solid fa-circle-notch fa-spin"></i>&nbsp; Running benchmark on ${model}&hellip;</p>`;
     try {
-        const res = await fetch(`${API_BASE_URL}/benchmark`, {
-            method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ model, prompt })
-        });
+        const res = await fetch(`${API_BASE_URL}/benchmark?prompt=${encodeURIComponent(prompt)}&model=${encodeURIComponent(model)}`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        resultsContainer.innerHTML = `<p><strong>Prompt:</strong> ${prompt}</p><br>`;
-        await handleStreamingResponse(res, resultsContainer, model, true);
+        const data = await res.json();
+        resultsContainer.innerHTML = "";
+        data.prompt = prompt;
+        resultsContainer.appendChild(createResultCard(data, true));
+        saveToHistory("Benchmark", prompt, model, { tps: 0, time: data.response_time || 0 });
     } catch (err) {
         resultsContainer.innerHTML = `<p class="error">Backend error: ${err.message}</p>`;
     } finally { setButtonsBusy(false); }
@@ -210,17 +269,25 @@ benchmarkBtn.onclick = async () => {
 compareBtn.onclick = async () => {
     const prompt = promptInput.value.trim();
     if (!prompt) { promptInput.focus(); return; }
+    promptInput.value = ""; // Clear input immediately
+    showResultsSection();
     setButtonsBusy(true);
     resultsContainer.innerHTML = `<p class="placeholder"><i class="fa-solid fa-circle-notch fa-spin"></i>&nbsp; Comparing all models&hellip; May take a few minutes.</p>`;
     try {
-        const res = await fetch(`${API_BASE_URL}/compare`, {
-            method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ prompt, models: [] })
-        });
+        const res = await fetch(`${API_BASE_URL}/benchmark?prompt=${encodeURIComponent(prompt)}`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
-        resultsContainer.innerHTML = `<p><strong>Prompt:</strong> ${prompt}</p><br>`;
-        data.results.forEach(r => resultsContainer.appendChild(createResultCard(r, true)));
+        resultsContainer.innerHTML = "";
+        
+        let bestTime = Infinity;
+        data.forEach(r => { if (r.response_time && r.response_time < bestTime) bestTime = r.response_time; });
+        
+        data.forEach(r => {
+            r.prompt = prompt;
+            if (r.response_time === bestTime) r.score = "Fastest \uD83C\uDFC6";
+            resultsContainer.appendChild(createResultCard(r, true));
+        });
+        saveToHistory("Compare", prompt, "All Models", { time: bestTime });
     } catch (err) {
         resultsContainer.innerHTML = `<p class="error">Backend error: ${err.message}</p>`;
     } finally { setButtonsBusy(false); }
@@ -228,17 +295,19 @@ compareBtn.onclick = async () => {
 
 // ── Run Suite ──────────────────────────────────────────────────────────────
 suiteBtn.onclick = async () => {
+    const model = modelSelect.value;
+    showResultsSection();
     setButtonsBusy(true);
-    resultsContainer.innerHTML = `<p class="placeholder"><i class="fa-solid fa-circle-notch fa-spin"></i>&nbsp; Running evaluation suite&hellip; Grab a coffee!</p>`;
+    resultsContainer.innerHTML = `<p class="placeholder"><i class="fa-solid fa-circle-notch fa-spin"></i>&nbsp; Running evaluation suite on ${model}&hellip; Grab a coffee!</p>`;
     try {
-        const res = await fetch(`${API_BASE_URL}/benchmark-suite`, {
-            method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ models: [] })
-        });
+        const res = await fetch(`${API_BASE_URL}/suite?model=${encodeURIComponent(model)}`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
-        resultsContainer.innerHTML = `<h3>Suite Winner: 👑 ${data.winner}</h3><p>Tested on ${data.prompt_count} standard prompts</p><br>`;
-        data.results.forEach(r => resultsContainer.appendChild(createResultCard(r, true)));
+        resultsContainer.innerHTML = `<h3 style="margin-bottom: 1rem; color: var(--text-muted); text-align: center;">Evaluation Suite Complete on ${model}</h3>`;
+        data.forEach(r => {
+            resultsContainer.appendChild(createResultCard(r, true));
+        });
+        saveToHistory("Suite", "Eval Suite", model, {});
     } catch (err) {
         resultsContainer.innerHTML = `<p class="error">Backend error: ${err.message}</p>`;
     } finally { setButtonsBusy(false); }
@@ -246,17 +315,19 @@ suiteBtn.onclick = async () => {
 
 // ── Dataset Benchmark ──────────────────────────────────────────────────────
 datasetBtn.onclick = async () => {
+    const model = modelSelect.value;
+    showResultsSection();
     setButtonsBusy(true);
-    resultsContainer.innerHTML = `<p class="placeholder"><i class="fa-solid fa-circle-notch fa-spin"></i>&nbsp; Running dataset benchmark&hellip;</p>`;
+    resultsContainer.innerHTML = `<p class="placeholder"><i class="fa-solid fa-circle-notch fa-spin"></i>&nbsp; Running dataset benchmark on ${model}&hellip;</p>`;
     try {
-        const res = await fetch(`${API_BASE_URL}/dataset-benchmark`, {
-            method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ models: [] })
-        });
+        const res = await fetch(`${API_BASE_URL}/dataset?model=${encodeURIComponent(model)}`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
-        resultsContainer.innerHTML = `<h3>Dataset Winner: 🏆 ${data.winner}</h3><p>Tested on ${data.prompt_count} dataset prompts</p><br>`;
-        data.results.forEach(r => resultsContainer.appendChild(createResultCard(r, true)));
+        resultsContainer.innerHTML = `<h3 style="margin-bottom: 1rem; color: var(--text-muted); text-align: center;">Dataset Evaluation Complete on ${model}</h3>`;
+        data.forEach(r => {
+            resultsContainer.appendChild(createResultCard(r, true));
+        });
+        saveToHistory("Dataset", "Dataset Benchmark", model, {});
     } catch (err) {
         resultsContainer.innerHTML = `<p class="error">Backend error: ${err.message}</p>`;
     } finally { setButtonsBusy(false); }
@@ -490,31 +561,209 @@ if (!SpeechRecognition) {
         setState("idle");
     }
 
-    launchBtn.addEventListener("click", openVoiceChat);
-    closeBtn .addEventListener("click", closeVoiceChat);
+    if (launchBtn) launchBtn.addEventListener("click", openVoiceChat);
+    if (closeBtn) closeBtn.addEventListener("click", closeVoiceChat);
 
     function toggleListen() {
         if      (vcState === "listening") stopVcListening();
         else if (vcState === "idle")      startVcListening();
         else if (vcState === "speaking")  { window.speechSynthesis.cancel(); setState("idle"); }
     }
-    orbEl  .addEventListener("click", toggleListen);
-    mainBtn.addEventListener("click", toggleListen);
+    
+    if (orbEl) orbEl.addEventListener("click", toggleListen);
+    if (mainBtn) mainBtn.addEventListener("click", toggleListen);
 
-    stopBtn.addEventListener("click", () => {
-        window.speechSynthesis.cancel();
-        if (vcState === "speaking") setState("idle");
-    });
+    if (stopBtn) {
+        stopBtn.addEventListener("click", () => {
+            window.speechSynthesis.cancel();
+            if (vcState === "speaking") setState("idle");
+        });
+    }
 
-    muteBtn.addEventListener("click", () => {
-        isMuted = !isMuted;
-        muteBtn.classList.toggle("active", isMuted);
-        muteBtn.title = isMuted ? "Unmute TTS" : "Mute TTS";
-        muteBtn.querySelector("i").className = isMuted ? "fa-solid fa-volume-xmark" : "fa-solid fa-volume-high";
-        if (isMuted) window.speechSynthesis.cancel();
-    });
+    if (muteBtn) {
+        muteBtn.addEventListener("click", () => {
+            isMuted = !isMuted;
+            muteBtn.classList.toggle("active", isMuted);
+            muteBtn.title = isMuted ? "Unmute TTS" : "Mute TTS";
+            muteBtn.querySelector("i").className = isMuted ? "fa-solid fa-volume-xmark" : "fa-solid fa-volume-high";
+            if (isMuted) window.speechSynthesis.cancel();
+        });
+    }
 
-    overlay.addEventListener("click", (e) => { if (e.target === overlay) closeVoiceChat(); });
-    document.addEventListener("keydown", (e) => { if (e.key === "Escape" && overlay.classList.contains("vc-open")) closeVoiceChat(); });
+    if (overlay) overlay.addEventListener("click", (e) => { if (e.target === overlay) closeVoiceChat(); });
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape" && overlay && overlay.classList.contains("vc-open")) closeVoiceChat(); });
     window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
 })();
+
+// ════════════════════════════════════════════════════════════════════════════
+// RUN HISTORY AND DRAWER LOGIC
+// ════════════════════════════════════════════════════════════════════════════
+
+const drawerToggleBtn = document.getElementById("drawer-toggle-btn");
+const modelsDrawer    = document.getElementById("models-drawer");
+const historyListEl   = document.getElementById("history-list");
+let runHistory = JSON.parse(localStorage.getItem("slmRunHistory") || "[]");
+
+const clearHistoryBtn = document.getElementById("clear-history-btn");
+
+if (clearHistoryBtn) {
+    clearHistoryBtn.addEventListener("click", () => {
+        runHistory = [];
+        localStorage.setItem("slmRunHistory", JSON.stringify(runHistory));
+        renderHistory();
+    });
+}
+
+function saveToHistory(type, prompt, model, stats = null) {
+    const run = { id: Date.now(), type, prompt, model, date: new Date().toLocaleTimeString(), stats };
+    runHistory.unshift(run); // add to top
+    if (runHistory.length > 50) runHistory.pop();
+    localStorage.setItem("slmRunHistory", JSON.stringify(runHistory));
+    renderHistory();
+}
+
+function updateSessionStats() {
+    const runsEl = document.getElementById("stat-runs");
+    const avgEl  = document.getElementById("stat-avg");
+    const bestEl = document.getElementById("stat-best");
+    
+    if (!runsEl || !avgEl || !bestEl) return;
+    
+    const validRuns = runHistory.filter(r => r.stats && r.stats.tps > 0);
+    runsEl.textContent = runHistory.length;
+    
+    if (validRuns.length > 0) {
+        const sumTps = validRuns.reduce((acc, r) => acc + parseFloat(r.stats.tps), 0);
+        const avgTps = sumTps / validRuns.length;
+        const bestTps = Math.max(...validRuns.map(r => parseFloat(r.stats.tps)));
+        
+        avgEl.textContent = avgTps.toFixed(1);
+        bestEl.textContent = bestTps.toFixed(1);
+    } else {
+        avgEl.textContent = "0.0";
+        bestEl.textContent = "0.0";
+    }
+}
+
+function renderHistory() {
+    updateSessionStats();
+    if (runHistory.length === 0) {
+        historyListEl.innerHTML = `<div class="history-empty">No runs yet</div>`;
+        return;
+    }
+    historyListEl.innerHTML = "";
+    runHistory.forEach(run => {
+        const item = document.createElement("div");
+        item.className = "history-item";
+        item.innerHTML = `
+            <div class="history-item-title" title="${run.prompt}">${run.prompt}</div>
+            <div class="history-item-meta">
+                <span>${run.type}</span>
+                <span>${run.model} • ${run.date}</span>
+            </div>
+        `;
+        item.addEventListener("click", () => {
+            promptInput.value = run.prompt === "Evaluation Suite" || run.prompt === "Dataset Benchmark" ? "" : run.prompt;
+            promptInput.focus();
+        });
+        historyListEl.appendChild(item);
+    });
+}
+// Render history on startup
+renderHistory();
+
+// ════════════════════════════════════════════════════════════════════════════
+// LEFT ICON BAR LOGIC
+// ════════════════════════════════════════════════════════════════════════════
+const icons = {
+    eye: document.getElementById("icon-eye"),
+    plus: document.getElementById("icon-plus"),
+    search: document.getElementById("icon-search"),
+    archive: document.getElementById("icon-archive"),
+    cubes: document.getElementById("icon-cubes"),
+    print: document.getElementById("icon-print"),
+    code: document.getElementById("icon-code"),
+    palette: document.getElementById("icon-palette"),
+    download: document.getElementById("icon-download"),
+};
+
+const refreshModelsBtn = document.getElementById("refresh-models-btn");
+if (refreshModelsBtn) refreshModelsBtn.onclick = () => fetchModels();
+
+const userAvatar = document.getElementById("icon-user");
+if (userAvatar) userAvatar.onclick = () => alert("User Profile: Logged in as Local User");
+
+if (icons.eye) icons.eye.onclick = () => document.body.classList.toggle("compact-mode");
+if (icons.plus) icons.plus.onclick = () => { promptInput.value = ""; resultsContainer.innerHTML = ""; promptInput.focus(); };
+if (icons.search) icons.search.onclick = () => promptInput.focus();
+if (icons.archive) icons.archive.onclick = () => {
+    const hist = document.querySelector(".history-section");
+    if (hist) hist.style.display = hist.style.display === "none" ? "block" : "none";
+};
+if (icons.cubes) icons.cubes.onclick = () => fetchModels();
+if (icons.print) icons.print.onclick = () => window.print();
+if (icons.code) icons.code.onclick = () => window.open(`${API_BASE_URL}/docs`, "_blank");
+if (icons.palette) {
+    const accents = ["#8b5cf6", "#3b82f6", "#10b981", "#f97316"];
+    let aIdx = 0;
+    icons.palette.onclick = () => {
+        aIdx = (aIdx + 1) % accents.length;
+        document.documentElement.style.setProperty("--accent-purple", accents[aIdx]);
+        document.documentElement.style.setProperty("--accent-purple-light", accents[aIdx]);
+    };
+}
+if (icons.download) icons.download.onclick = () => {
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(runHistory, null, 2));
+    const dlAnchorElem = document.createElement("a");
+    dlAnchorElem.setAttribute("href", dataStr);
+    dlAnchorElem.setAttribute("download", "slm_benchmark_history.json");
+    dlAnchorElem.click();
+};
+
+// ════════════════════════════════════════════════════════════════════════════
+// TEMP SLIDER LOGIC
+// ════════════════════════════════════════════════════════════════════════════
+const tempWrap = document.getElementById("temp-slider-wrap");
+const tempTrack = document.getElementById("temp-track");
+const tempFill = document.getElementById("temp-fill");
+const tempThumb = document.getElementById("temp-thumb");
+const tempVal = document.getElementById("temp-val-display");
+
+let currentTemp = 0.7; // Global temp that could be sent to backend later
+
+if (tempWrap && tempTrack && tempFill && tempThumb && tempVal) {
+    let isDragging = false;
+
+    function updateTempFromEvent(e) {
+        const rect = tempTrack.getBoundingClientRect();
+        let x = e.clientX - rect.left;
+        x = Math.max(0, Math.min(x, rect.width));
+        const pct = x / rect.width;
+        
+        currentTemp = (pct * 2.0).toFixed(1); // Scale 0 to 2.0
+        
+        tempFill.style.width = (pct * 100) + "%";
+        tempThumb.style.left = (pct * 100) + "%";
+        tempThumb.style.transform = "translateX(-50%)";
+        tempVal.textContent = currentTemp;
+    }
+
+    tempWrap.addEventListener("mousedown", (e) => {
+        isDragging = true;
+        updateTempFromEvent(e);
+    });
+
+    document.addEventListener("mousemove", (e) => {
+        if (isDragging) updateTempFromEvent(e);
+    });
+
+    document.addEventListener("mouseup", () => {
+        isDragging = false;
+    });
+    
+    // Initial setup
+    const initialPct = currentTemp / 2.0;
+    tempFill.style.width = (initialPct * 100) + "%";
+    tempThumb.style.left = (initialPct * 100) + "%";
+    tempThumb.style.transform = "translateX(-50%)";
+}

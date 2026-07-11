@@ -3,188 +3,173 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Local SLM Benchmark</title>
-    <meta name="description" content="Compare performance of local Small Language Models running via Ollama — latency, tokens/sec, and head-to-head comparison.">
-    <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <title>Local SLM Benchmark — Dashboard</title>
+    <link rel="stylesheet" href="style.css?v=2">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-    <div class="app-container">
-        <!-- Sidebar -->
-        <aside class="sidebar">
-            <div class="logo-box">
-                <div class="logo">SLM</div>
+    <div class="app-layout">
+        
+        <!-- Far Left Icon Bar -->
+        <aside class="icon-bar">
+            <div class="icon-bar-top">
+                <div class="icon-btn logo-btn" id="icon-eye" title="Toggle UI Density"><i class="fa-solid fa-eye"></i></div>
+                <div class="icon-btn" id="icon-plus" title="New Chat"><i class="fa-solid fa-plus"></i></div>
+                <div class="icon-btn" id="icon-search" title="Focus Input"><i class="fa-solid fa-magnifying-glass"></i></div>
+                <div class="icon-btn" id="icon-archive" title="Toggle History"><i class="fa-solid fa-box-archive"></i></div>
+                <div class="icon-btn" id="icon-cubes" title="Refresh Models"><i class="fa-solid fa-cubes"></i></div>
+                <div class="icon-btn" id="icon-print" title="Print Results"><i class="fa-solid fa-print"></i></div>
+                <div class="icon-btn" id="icon-code" title="API Docs"><i class="fa-solid fa-code"></i></div>
+                <div class="icon-btn" id="icon-palette" title="Change Accent"><i class="fa-solid fa-palette"></i></div>
             </div>
-
-            <nav class="sidebar-nav">
-                <div class="nav-item active">Dashboard</div>
-            </nav>
-
-            <div class="system-information">
-                <h4>SYSTEM INFORMATION</h4>
-                <div class="info-row">
-                    <span>CPU:</span>
-                    <span class="info-val">8-Core Processor</span>
-                </div>
-                <div class="info-row">
-                    <span>RAM:</span>
-                    <span class="info-val">16GB DDR4</span>
-                </div>
-                <div class="info-row">
-                    <span>GPU:</span>
-                    <span class="info-val">Integrated Graphics</span>
-                </div>
-                <div class="info-row">
-                    <span>Runtime:</span>
-                    <span class="info-val">Ollama</span>
-                </div>
-            </div>
-
-            <div class="models-list-container">
-                <h4>MODELS</h4>
-                <div id="sidebar-models" class="model-tags">
-                    <!-- Populated by JS -->
-                </div>
-            </div>
-
-            <!-- Run History -->
-            <div class="history-container">
-                <h4>HISTORY</h4>
-                <div id="history-list" class="history-list">
-                    <div class="history-empty">No runs yet</div>
-                </div>
-            </div>
-
-            <div class="status-box">
-                Status: <span class="status-online">Online</span>
+            <div class="icon-bar-bottom">
+                <div class="icon-btn" id="icon-download" title="Export History"><i class="fa-solid fa-download"></i></div>
+                <div class="user-avatar" id="icon-user" title="Profile">S</div>
             </div>
         </aside>
 
-        <!-- Main Content -->
+        <!-- Main Sidebar -->
+        <aside class="main-sidebar">
+            <div class="sidebar-header">
+                <span class="slm-badge">SLM</span>
+                <h1>Dashboard</h1>
+            </div>
+
+            <div class="sidebar-section">
+                <h2 class="section-title">SYSTEM INFORMATION</h2>
+                <div class="sys-info-grid">
+                    <div class="sys-row"><span class="sys-label">CPU:</span><span class="sys-val" id="sys-cpu">Loading...</span></div>
+                    <div class="sys-row"><span class="sys-label">RAM:</span><span class="sys-val" id="sys-ram">Loading...</span></div>
+                    <div class="sys-row"><span class="sys-label">GPU:</span><span class="sys-val" id="sys-gpu">Loading...</span></div>
+                    <div class="sys-row"><span class="sys-label">Runtime:</span><span class="sys-val sys-val-purple" id="sys-os">Loading...</span></div>
+                    <div class="sys-row">
+                        <span class="sys-label">Temp:</span>
+                        <div class="temp-slider-wrap" id="temp-slider-wrap" style="cursor: pointer;">
+                            <div class="temp-slider-track" id="temp-track">
+                                <div class="temp-slider-fill" id="temp-fill"></div>
+                                <div class="temp-slider-thumb" id="temp-thumb"></div>
+                            </div>
+                            <span class="temp-val" id="temp-val-display">0.7</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <h2 class="section-title">SESSION STATS</h2>
+                <div class="stats-grid">
+                    <div class="stat-box">
+                        <div class="stat-num" id="stat-runs">0</div>
+                        <div class="stat-label">RUNS</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-num" id="stat-avg">0.0</div>
+                        <div class="stat-label">AVG T/S</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-num" id="stat-best">0.0</div>
+                        <div class="stat-label">BEST T/S</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sidebar-section models-section">
+                <div class="section-title-row">
+                    <h2 class="section-title">MODELS</h2>
+                    <i class="fa-solid fa-rotate-right refresh-icon" id="refresh-models-btn" title="Refresh Models" style="cursor: pointer;"></i>
+                </div>
+                <div class="models-list" id="sidebar-models-list">
+                    <!-- Models populated by JS -->
+                    <div class="model-item active">
+                        <div class="model-name"><span class="status-dot"></span> Loading models...</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sidebar-section history-section">
+                <div class="section-title-row">
+                    <h2 class="section-title">HISTORY</h2>
+                    <button class="clear-history-btn" id="clear-history-btn"><i class="fa-solid fa-xmark"></i> Clear</button>
+                </div>
+                <div class="history-list" id="history-list">
+                    <!-- History items populated by JS -->
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
         <main class="main-content">
             <header class="main-header">
-                <h1 class="gradient-text">Local SLM Benchmark</h1>
-                <p class="subtitle">Compare performance of Small Language Models running locally via Ollama</p>
+                <h1 class="main-title">Local SLM Benchmark</h1>
+                <p class="main-subtitle">Compare performance of Small Language Models running locally via Ollama</p>
             </header>
 
-            <div class="content-scroll" id="main-scroll-area">
-                <!-- Result Area — shown after benchmark/compare runs -->
-                <div id="result-area" class="result-area hidden"></div>
-
-                <!-- Analytics Hub (shown after full evaluate suite) -->
-                <div id="analytics-hub" class="analytics-grid hidden">
-                    <!-- Chart Module -->
-                    <section class="workspace-panel glass-card">
-                        <div class="section-head">
-                            <h3>Performance Dynamics</h3>
-                            <div class="chart-toggles">
-                                <button class="metric-btn active" onclick="updateChartMetric('score')">Score</button>
-                                <button class="metric-btn" onclick="updateChartMetric('tps')">TPS</button>
-                                <button class="metric-btn" onclick="updateChartMetric('latency')">Latency</button>
-                            </div>
-                        </div>
-                        <div class="chart-viewport">
-                            <canvas id="performanceChart"></canvas>
-                        </div>
-                    </section>
-
-                    <!-- Leaderboard Module -->
-                    <section class="workspace-panel glass-card">
-                        <div class="section-head">
-                            <h3>Performance Leaderboard</h3>
-                        </div>
-                        <div class="leaderboard-container">
-                            <table class="data-matrix">
-                                <thead>
-                                    <tr>
-                                        <th>Model</th>
-                                        <th>Score</th>
-                                        <th>Avg TPS</th>
-                                        <th>Details</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="leaderboard-body">
-                                    <tr class="empty-row"><td colspan="4">No Data Available</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </section>
-
-                    <!-- Evaluation Tasks Inspector -->
-                    <section id="tasks-panel" class="workspace-panel glass-card full-width">
-                        <div class="section-head">
-                            <h3>Evaluation Tasks</h3>
-                            <p style="font-size: 0.75rem; color: var(--text-low);">Inspect specific prompts and model responses</p>
-                        </div>
-                        <div id="tasks-container" class="tasks-explorer">
-                            <div class="empty-state">RUN EVALUATION TO INSPECT TASKS</div>
-                        </div>
-                    </section>
-                </div>
-
-                <!-- Chat History Area -->
-                <div id="chat-history" class="chat-history">
-                    <div class="ai-bubble intro">
-                        👋 Welcome! Select a model, pick a quick test, then hit <strong>BENCHMARK</strong> to measure performance or the <strong>send</strong> button to chat.
-                    </div>
-                </div>
+            <div class="results-container" id="results-container">
+                <!-- Results will be injected here by JS -->
             </div>
 
-            <!-- Benchmark Prompt Presets -->
-            <div class="prompt-presets-bar">
-                <span class="presets-label">Quick Tests:</span>
-                <button class="preset-btn" id="preset-speed" onclick="fillPreset('speed')" title="Measure latency + tokens/sec">⚡ Speed</button>
-                <button class="preset-btn" id="preset-reasoning" onclick="fillPreset('reasoning')" title="Test logical thinking">🧠 Reasoning</button>
-                <button class="preset-btn" id="preset-coding" onclick="fillPreset('coding')" title="Test code quality">💻 Coding</button>
-                <button class="preset-btn" id="preset-memory" onclick="fillPreset('memory')" title="Test context handling">📝 Memory</button>
-                <button class="preset-btn" id="preset-stress" onclick="fillPreset('stress')" title="Output speed stress test">🚀 Stress</button>
-                <button class="preset-btn" id="preset-comparison" onclick="fillPreset('comparison')" title="Best cross-model comparison">🎯 Comparison</button>
-            </div>
+            <!-- Bottom Controls -->
+            <div class="bottom-controls">
+                <div class="quick-tests-row">
+                    <span class="qt-label">QUICK TESTS:</span>
+                    <button class="qt-btn" data-prompt="Explain artificial intelligence in exactly 50 words. Be clear and concise." data-action="ask">
+                        <i class="fa-solid fa-bolt" style="color:#f97316;"></i> Speed
+                    </button>
+                    <button class="qt-btn" data-prompt="A farmer has 17 sheep. All but 9 die. How many sheep are left? Show your reasoning step by step." data-action="ask">
+                        <i class="fa-solid fa-brain" style="color:#d946ef;"></i> Reasoning
+                    </button>
+                    <button class="qt-btn" data-prompt="Write a Python function to check if a number is prime. Include a docstring and example usage." data-action="ask">
+                        <i class="fa-solid fa-laptop-code" style="color:#0ea5e9;"></i> Coding
+                    </button>
+                    <button class="qt-btn" data-prompt="Remember this number: 47291. Now explain what a database is in 2 sentences. After that, repeat the number you were told to remember." data-action="ask">
+                        <i class="fa-solid fa-floppy-disk" style="color:#cbd5e1;"></i> Memory
+                    </button>
+                    <button class="qt-btn" data-prompt="Write a detailed 500-word essay on the future of artificial intelligence, covering ethics, automation, and societal impact." data-action="benchmark">
+                        <i class="fa-solid fa-fire" style="color:#f97316;"></i> Stress
+                    </button>
+                    <button class="qt-btn" data-prompt="What is the meaning of life? Answer in exactly one sentence." data-action="compare">
+                        <i class="fa-solid fa-bullseye" style="color:#ec4899;"></i> Comparison
+                    </button>
+                </div>
 
-            <!-- Floating Chat Input -->
-            <div class="chat-input-wrapper">
-                <div class="chat-input-container">
-                    <div class="input-actions-left">
-                        <select id="model-select" class="chat-model-select">
-                            <option>Loading...</option>
-                        </select>
-                    </div>
-                    <textarea id="prompt-input" placeholder="Ask anything or pick a Quick Test above..." rows="1"></textarea>
-                    <div class="input-actions-right">
-                        <button class="icon-btn" title="Voice Input">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
-                        </button>
-                        <button id="ask-btn" class="send-btn" title="Send Message">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-                        </button>
-                        <button id="stop-btn" class="stop-btn hidden" title="Stop Generation">
-                            <div class="stop-icon"></div>
-                        </button>
-                        <button id="benchmark-btn" class="benchmark-pill-btn" title="Run Benchmark on selected model">
-                            BENCHMARK
-                        </button>
-                        <button id="compare-btn" class="compare-pill-btn" title="Compare all installed models">
-                            COMPARE ALL
-                        </button>
-                        <button id="suite-btn" class="suite-pill-btn" title="Run full 4-prompt benchmark suite across all models">
-                            RUN SUITE
-                        </button>
-                        <button id="dataset-btn" class="dataset-pill-btn" title="Run standardized dataset benchmark (8 typed prompts)">
-                            DATASET
-                        </button>
+                <div class="input-bar-wrapper">
+                    <div class="input-bar">
+                        <div class="model-selector-pill">
+                            <select id="model-select">
+                                <option value="tinyllama">tinyllama</option>
+                            </select>
+                        </div>
+                        <input type="text" id="prompt-input" placeholder="Ask anything..." autocomplete="off">
+                        <div class="input-actions">
+                            <span class="token-limit">512</span>
+                            <i class="fa-solid fa-microphone mic-icon" id="mic-btn"></i>
+                            <button class="send-btn" id="ask-btn"><i class="fa-solid fa-play"></i></button>
+                        </div>
                     </div>
                 </div>
-                <div class="chat-footer-disclaimer">
-                    <span class="offline-badge">🔴 LOCAL MODE</span>
-                    Models run <strong>100% offline</strong> via Ollama — no internet access. Responses about "latest", "current", or "today" may be outdated.
-                    <span class="disclaimer-sep">·</span>
-                    SLM Benchmark measures latency &amp; tokens/sec using Ollama's native eval counters.
+
+                <div class="main-actions-row">
+                    <button class="action-btn btn-benchmark" id="benchmark-btn">BENCHMARK</button>
+                    <button class="action-btn btn-compare" id="compare-btn">COMPARE ALL</button>
+                    <button class="action-btn btn-suite" id="suite-btn">RUN SUITE</button>
+                    <button class="action-btn btn-dataset" id="dataset-btn">DATASET</button>
+                </div>
+
+                <div class="footer-note">
+                    <span class="status-dot-footer"></span>
+                    LOCAL MODE: Models run <strong>100% offline</strong> via Ollama — no internet access. Responses about "latest", "current", or "today" may be outdated. - SLM Benchmark measures latency & tokens/sec using Ollama's native eval counters.
                 </div>
             </div>
         </main>
     </div>
 
-    <script src="script.js"></script>
+    <!-- Hidden elements for legacy script compatibility -->
+    <div id="voice-chat-btn" style="display:none;"></div>
+    <div id="drawer-toggle-btn" style="display:none;"></div>
+    
+    <script src="script.js?v=2"></script>
 </body>
 </html>

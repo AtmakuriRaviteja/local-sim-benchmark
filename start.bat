@@ -22,7 +22,7 @@ REM Step 2: Start the FastAPI backend (cd into backend so relative imports work)
 echo.
 echo [2/3] Starting FastAPI backend on http://localhost:8000 ...
 set ROOT=%~dp0
-start "SLM Benchmark Backend" /MIN cmd /c "cd /d "%ROOT%backend" && "%ROOT%.venv\Scripts\python.exe" -m uvicorn main:app --host 0.0.0.0 --port 8000"
+start "SLM Benchmark Backend" /MIN cmd /c "cd /d "%ROOT%local-ai-benchmark\backend" && "%ROOT%.venv\Scripts\python.exe" -m uvicorn main:app --host 0.0.0.0 --port 8000"
 
 echo  Waiting for server to be ready...
 timeout /t 4 /nobreak >nul
@@ -46,14 +46,14 @@ REM Step 3: Open the frontend
 :open_browser
 echo.
 echo [3/3] Opening frontend in your default browser...
-start "" "%ROOT%docs\index.html"
+start "" "%ROOT%local-ai-benchmark\frontend\index.html"
 
 echo.
 echo ============================================================
 echo   App is running!
 echo   Backend API : http://localhost:8000
 echo   API Docs    : http://localhost:8000/docs
-echo   Frontend    : docs\index.html (opened in browser)
+echo   Frontend    : local-ai-benchmark\frontend\index.html (opened in browser)
 echo ============================================================
 echo.
 echo  Press any key to STOP the backend server and exit.
